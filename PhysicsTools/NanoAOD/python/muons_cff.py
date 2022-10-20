@@ -161,7 +161,7 @@ muonTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         mvaId = Var("passed('MvaLoose')+passed('MvaMedium')+passed('MvaTight')+passed('MvaVTight')+passed('MvaVVTight')","uint8",doc="Mva for ID of prompt leptons from miniAOD selector (1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight)"),
         mvaLowPtId = Var("passed('LowPtMvaLoose')+passed('LowPtMvaMedium')","uint8", doc="Low Pt Mva ID from miniAOD selector (1=LowPtMvaLoose, 2=LowPtMvaMedium)"),
         miniIsoId = Var("passed('MiniIsoLoose')+passed('MiniIsoMedium')+passed('MiniIsoTight')+passed('MiniIsoVeryTight')","uint8",doc="MiniIso ID from miniAOD selector (1=MiniIsoLoose, 2=MiniIsoMedium, 3=MiniIsoTight, 4=MiniIsoVeryTight)"),
-        mvaIDMuon = Var("mvaIDValue()",float,doc="MVA-based ID score (from miniAOD)",precision=14),
+        mvaIDMuon = Var("mvaIDValue()",float,doc="MVA-based ID score ",precision=6),
         mvaIDMuon_WP = Var("passed('MvaIDwpMedium')+passed('MvaIDwpTight')","uint8",doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
         multiIsoId = Var("?passed('MultiIsoMedium')?2:passed('MultiIsoLoose')","uint8",doc="MultiIsoId from miniAOD selector (1=MultiIsoLoose, 2=MultiIsoMedium)"),
         puppiIsoId = Var("passed('PuppiIsoLoose')+passed('PuppiIsoMedium')+passed('PuppiIsoTight')", "uint8", doc="PuppiIsoId from miniAOD selector (1=Loose, 2=Medium, 3=Tight)"),
@@ -181,11 +181,8 @@ for modifier in  run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016, run2_nanoAOD_94XM
     modifier.toModify(muonTable.variables, puppiIsoId = None, softMva = None)
 
 run2_nanoAOD_102Xv1.toModify(muonTable.variables, puppiIsoId = None)
-print(modifier)
-for modifier in (run2_miniAOD_80XLegacy,run2_nanoAOD_92X,run2_nanoAOD_94X2016,run2_nanoAOD_94XMiniAODv1,run2_nanoAOD_94XMiniAODv2,run2_nanoAOD_102Xv1,run2_nanoAOD_106Xv1,run2_nanoAOD_106Xv2,run3_nanoAOD_122):
-    modifier.toModify(muonTable.variables,mvaIDMuon=None )
-    modifier.toModify(muonTable.variables,mvaIDMuon_WP=None )
-    modifier.toModify(muonTable.externalVariables, mvaIDMuon = ExtVar(cms.InputTag("muonMVAID:probGOOD"),float, doc="MVA-based ID score (from nanoAOD)",precision=14))
+
+(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTable.variables,mvaIDMuon=None).toModify(muonTable.variables,mvaIDMuon_WP=None).toModify(muonTable.externalVariables, mvaIDMuon = ExtVar(cms.InputTag("muonMVAID:probGOOD"),float, doc="MVA-based ID score",precision=6))
 
 # Revert back to AK4 CHS jets for Run 2
 run2_nanoAOD_ANY.toModify(ptRatioRelForMu,srcJet="updatedJets")
@@ -215,6 +212,6 @@ muonMCTable = cms.EDProducer("CandMCMatchTableProducer",
 muonTask = cms.Task(slimmedMuonsUpdated,isoForMu,ptRatioRelForMu,slimmedMuonsWithUserData,finalMuons,finalLooseMuons )
 muonMCTask = cms.Task(muonsMCMatchForTable,muonMCTable)
 muonTablesTask = cms.Task(muonMVATTH,muonMVALowPt,muonTable)
-for modifier in (run2_miniAOD_80XLegacy,run2_nanoAOD_92X,run2_nanoAOD_94X2016,run2_nanoAOD_94XMiniAODv1,run2_nanoAOD_94XMiniAODv2,run2_nanoAOD_102Xv1,run2_nanoAOD_106Xv1,run2_nanoAOD_106Xv2,run3_nanoAOD_122):
-    modifier.toModify(muonTablesTask,muonTablesTask.add(muonMVAID))
+
+(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTablesTask,muonTablesTask.add(muonMVAID))
 
