@@ -118,15 +118,6 @@ run2_miniAOD_80XLegacy.toModify(nanoDQM.vplots.Flag, plots = _Flag_plots_80x)
 
 run2_miniAOD_80XLegacy.toModify(nanoDQM.vplots, IsoTrack = None)
 
-_Muon_plots_preRun3 = copy.deepcopy(nanoDQM.vplots.Muon.plots)
-
-for plot in _Muon_plots_preRun3:
-    if plot.name.value() == "mvaIDMuon_WP":
-       _Muon_plots_preRun3.remove(plot)
-
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  
-run3_nanoAOD_122).toModify(nanoDQM.vplots.Muon.plots, plots = _Muon_plots_preRun3 )
-
 ## MC
 nanoDQMMC = nanoDQM.clone()
 nanoDQMMC.vplots.Electron.sels.Prompt = cms.string("genPartFlav == 1")

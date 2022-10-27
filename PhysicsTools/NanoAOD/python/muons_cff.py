@@ -31,32 +31,8 @@ ptRatioRelForMu = cms.EDProducer("MuonJetVarProducer",
     srcVtx = cms.InputTag("offlineSlimmedPrimaryVertices"),
 )
 
-slimmedMuonsWithUserData = cms.EDProducer("PATMuonUserDataEmbedder",
-     src = cms.InputTag("slimmedMuonsUpdated"),
-     userFloats = cms.PSet(
-        miniIsoChg = cms.InputTag("isoForMu:miniIsoChg"),
-        miniIsoAll = cms.InputTag("isoForMu:miniIsoAll"),
-        ptRatio = cms.InputTag("ptRatioRelForMu:ptRatio"),
-        ptRel = cms.InputTag("ptRatioRelForMu:ptRel"),
-        jetNDauChargedMVASel = cms.InputTag("ptRatioRelForMu:jetNDauChargedMVASel"),
-     ),
-     userCands = cms.PSet(
-        jetForLepJetVar = cms.InputTag("ptRatioRelForMu:jetForLepJetVar") # warning: Ptr is null if no match is found
-     ),
-)
-
-finalMuons = cms.EDFilter("PATMuonRefSelector",
-    src = cms.InputTag("slimmedMuonsWithUserData"),
-    cut = cms.string("pt > 15 || (pt > 3 && (passed('CutBasedIdLoose') || passed('SoftCutBasedId') || passed('SoftMvaId') || passed('CutBasedIdGlobalHighPt') || passed('CutBasedIdTrkHighPt')))")
-)
-
-finalLooseMuons = cms.EDFilter("PATMuonRefSelector", # for isotrack cleaning
-    src = cms.InputTag("slimmedMuonsWithUserData"),
-    cut = cms.string("pt > 3 && track.isNonnull && isLooseMuon")
-)
-
-muonMVAID= cms.EDProducer("EvaluateMuonMVAID",
-    src = cms.InputTag("linkedObjects","muons"),
+muonMVAID = cms.EDProducer("EvaluateMuonMVAID",
+    src = cms.InputTag("slimmedMuonsUpdated"),
     weightFile =  cms.FileInPath("RecoMuon/MuonIdentification/data/mvaID.onnx"),
     isClassifier = cms.bool(False),
     backend = cms.string('ONNX'),
@@ -79,6 +55,34 @@ muonMVAID= cms.EDProducer("EvaluateMuonMVAID",
         LepGood_pt = cms.string("pt"),
         LepGood_eta = cms.string("eta"),
     ) 
+)
+
+slimmedMuonsWithUserData = cms.EDProducer("PATMuonUserDataEmbedder",
+     src = cms.InputTag("slimmedMuonsUpdated"),
+     userFloats = cms.PSet(
+        miniIsoChg = cms.InputTag("isoForMu:miniIsoChg"),
+        miniIsoAll = cms.InputTag("isoForMu:miniIsoAll"),
+        ptRatio = cms.InputTag("ptRatioRelForMu:ptRatio"),
+        ptRel = cms.InputTag("ptRatioRelForMu:ptRel"),
+        jetNDauChargedMVASel = cms.InputTag("ptRatioRelForMu:jetNDauChargedMVASel"),
+     ),
+     userCands = cms.PSet(
+        jetForLepJetVar = cms.InputTag("ptRatioRelForMu:jetForLepJetVar") # warning: Ptr is null if no match is found
+     ),
+)
+
+(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
+ | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(slimmedMuonsWithUserData.userFloats,
+                                                                                                  mvaIDMuon = cms.InputTag("muonMVAID:probGood"))
+
+finalMuons = cms.EDFilter("PATMuonRefSelector",
+    src = cms.InputTag("slimmedMuonsWithUserData"),
+    cut = cms.string("pt > 15 || (pt > 3 && (passed('CutBasedIdLoose') || passed('SoftCutBasedId') || passed('SoftMvaId') || passed('CutBasedIdGlobalHighPt') || passed('CutBasedIdTrkHighPt')))")
+)
+
+finalLooseMuons = cms.EDFilter("PATMuonRefSelector", # for isotrack cleaning
+    src = cms.InputTag("slimmedMuonsWithUserData"),
+    cut = cms.string("pt > 3 && track.isNonnull && isLooseMuon")
 )
 
 muonMVATTH= cms.EDProducer("MuonBaseMVAValueMapProducer",
@@ -176,13 +180,15 @@ muonTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     ),
 )
 
+(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
+ | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTable.variables,mvaIDMuon=None).toModify(
+     muonTable.variables, mvaIDMuon_WP = Var("? userFloat('mvaIDMuon') > 0.49 ? 2 : (? userFloat('mvaIDMuon') > 0.08 ? 1 : 0)", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
+                          mvaIDMuon = Var("usedFloat('mvaIDMuon')", float, doc="MVA-based ID score",precision=6))
 
 for modifier in  run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016, run2_nanoAOD_94XMiniAODv1, run2_nanoAOD_94XMiniAODv2:
     modifier.toModify(muonTable.variables, puppiIsoId = None, softMva = None)
 
 run2_nanoAOD_102Xv1.toModify(muonTable.variables, puppiIsoId = None)
-
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTable.variables,mvaIDMuon=None).toModify(muonTable.variables,mvaIDMuon_WP=None).toModify(muonTable.externalVariables, mvaIDMuon = ExtVar(cms.InputTag("muonMVAID:probGOOD"),float, doc="MVA-based ID score",precision=6))
 
 # Revert back to AK4 CHS jets for Run 2
 run2_nanoAOD_ANY.toModify(ptRatioRelForMu,srcJet="updatedJets")
@@ -213,5 +219,5 @@ muonTask = cms.Task(slimmedMuonsUpdated,isoForMu,ptRatioRelForMu,slimmedMuonsWit
 muonMCTask = cms.Task(muonsMCMatchForTable,muonMCTable)
 muonTablesTask = cms.Task(muonMVATTH,muonMVALowPt,muonTable)
 
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTablesTask,muonTablesTask.add(muonMVAID))
+(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTask,muonTask.add(muonMVAID))
 
