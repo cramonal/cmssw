@@ -39,9 +39,9 @@ muonMVAID = cms.EDProducer("EvaluateMuonMVAID",
     name = cms.string("muonMVAID"),
     outputTensorName= cms.string("probabilities"),
     inputTensorName= cms.string("float_input"),
-    outputNames = cms.vstring(["probBAD","probGOOD"]),
+    outputNames = cms.vstring(["probGOOD", "wpMedium", "wpTight"]),
     batch_eval =cms.bool(True),
-    outputFormulas = cms.vstring(["1.0*at(0)","at(1)"]),
+    outputFormulas = cms.vstring(["at(1)", "? at(1) > 0.14 ? 1 : 0", "? at(1) > 0.35 ? 1 : 0"]),
     variablesOrder = cms.vstring(["LepGood_global_muon","LepGood_validFraction","Muon_norm_chi2_extended","LepGood_local_chi2","LepGood_kink","LepGood_segmentComp","Muon_n_Valid_hits_extended","LepGood_n_MatchedStations","LepGood_Valid_pixel","LepGood_tracker_layers","LepGood_pt","LepGood_eta"]),
     variables = cms.PSet(
         LepGood_global_muon = cms.string("isGlobalMuon"),
@@ -73,7 +73,9 @@ slimmedMuonsWithUserData = cms.EDProducer("PATMuonUserDataEmbedder",
 
 (run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
  | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(slimmedMuonsWithUserData.userFloats,
-                                                                                                  mvaIDMuon = cms.InputTag("muonMVAID:probGood"))
+                                                                                                  mvaIDMuon = cms.InputTag("muonMVAID:probGOOD"),
+                                                                                                  mvaIDMuon_wpMedium = cms.InputTag("muonMVAID:wpMedium"),
+                                                                                                  mvaIDMuon_wpTight = cms.InputTag("muonMVAID:wpTight"))
 
 finalMuons = cms.EDFilter("PATMuonRefSelector",
     src = cms.InputTag("slimmedMuonsWithUserData"),
@@ -182,8 +184,8 @@ muonTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
 
 (run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
  | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTable.variables,mvaIDMuon=None).toModify(
-     muonTable.variables, mvaIDMuon_WP = Var("? userFloat('mvaIDMuon') > 0.49 ? 2 : (? userFloat('mvaIDMuon') > 0.08 ? 1 : 0)", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
-                          mvaIDMuon = Var("usedFloat('mvaIDMuon')", float, doc="MVA-based ID score",precision=6))
+     muonTable.variables, mvaIDMuon_WP = Var("userFloat('mvaIDMuon_wpMedium') + userFloat('mvaIDMuon_wpTight')", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
+                          mvaIDMuon = Var("userFloat('mvaIDMuon')", float, doc="MVA-based ID score",precision=6))
 
 for modifier in  run2_miniAOD_80XLegacy, run2_nanoAOD_94X2016, run2_nanoAOD_94XMiniAODv1, run2_nanoAOD_94XMiniAODv2:
     modifier.toModify(muonTable.variables, puppiIsoId = None, softMva = None)
@@ -220,4 +222,5 @@ muonMCTask = cms.Task(muonsMCMatchForTable,muonMCTable)
 muonTablesTask = cms.Task(muonMVATTH,muonMVALowPt,muonTable)
 
 (run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTask,muonTask.add(muonMVAID))
+
 
