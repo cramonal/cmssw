@@ -182,6 +182,7 @@ muonTable = simpleCandidateFlatTableProducer.clone(
      muonTable.variables, mvaMuID_WP = Var("userFloat('mvaMuID_wpMedium') + userFloat('mvaMuID_wpTight')", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
                           mvaMuID = Var("userFloat('mvaMuID')", float, doc="MVA-based ID score",precision=6))
 
+
 # Revert back to AK4 CHS jets for Run 2
 run2_nanoAOD_ANY.toModify(
     ptRatioRelForMu,srcJet="updatedJets"
