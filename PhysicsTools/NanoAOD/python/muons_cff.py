@@ -70,11 +70,10 @@ slimmedMuonsWithUserData = cms.EDProducer("PATMuonUserDataEmbedder",
      ),
 )
 
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
- | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(slimmedMuonsWithUserData.userFloats,
-                                                                                                  mvaIDMuon = cms.InputTag("muonMVAID:probGOOD"),
-                                                                                                  mvaIDMuon_wpMedium = cms.InputTag("muonMVAID:wpMedium"),
-                                                                                                  mvaIDMuon_wpTight = cms.InputTag("muonMVAID:wpTight"))
+(run2_nanoAOD_106Xv2 | run3_nanoAOD_122 ).toModify(slimmedMuonsWithUserData.userFloats,
+                                                                                                  mvaMuID = cms.InputTag("muonMVAID:probGOOD"),
+                                                                                                  mvaMuID_wpMedium = cms.InputTag("muonMVAID:wpMedium"),
+                                                                                                  mvaMuID_wpTight = cms.InputTag("muonMVAID:wpTight"))
 
 finalMuons = cms.EDFilter("PATMuonRefSelector",
     src = cms.InputTag("slimmedMuonsWithUserData"),
@@ -164,8 +163,8 @@ muonTable = simpleCandidateFlatTableProducer.clone(
         mvaId = Var("passed('MvaLoose')+passed('MvaMedium')+passed('MvaTight')+passed('MvaVTight')+passed('MvaVVTight')","uint8",doc="Mva for ID of prompt leptons from miniAOD selector (1=MvaLoose, 2=MvaMedium, 3=MvaTight, 4=MvaVTight, 5=MvaVVTight)"),
         mvaLowPtId = Var("passed('LowPtMvaLoose')+passed('LowPtMvaMedium')","uint8", doc="Low Pt Mva ID from miniAOD selector (1=LowPtMvaLoose, 2=LowPtMvaMedium)"),
         miniIsoId = Var("passed('MiniIsoLoose')+passed('MiniIsoMedium')+passed('MiniIsoTight')+passed('MiniIsoVeryTight')","uint8",doc="MiniIso ID from miniAOD selector (1=MiniIsoLoose, 2=MiniIsoMedium, 3=MiniIsoTight, 4=MiniIsoVeryTight)"),
-        mvaIDMuon = Var("mvaIDValue()",float,doc="MVA-based ID score ",precision=6),
-        mvaIDMuon_WP = Var("passed('MvaIDwpMedium')+passed('MvaIDwpTight')","uint8",doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
+        mvaMuID = Var("mvaIDValue()",float,doc="MVA-based ID score ",precision=6),
+        mvaMuID_WP = Var("passed('MvaIDwpMedium')+passed('MvaIDwpTight')","uint8",doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
         multiIsoId = Var("?passed('MultiIsoMedium')?2:passed('MultiIsoLoose')","uint8",doc="MultiIsoId from miniAOD selector (1=MultiIsoLoose, 2=MultiIsoMedium)"),
         puppiIsoId = Var("passed('PuppiIsoLoose')+passed('PuppiIsoMedium')+passed('PuppiIsoTight')", "uint8", doc="PuppiIsoId from miniAOD selector (1=Loose, 2=Medium, 3=Tight)"),
         triggerIdLoose = Var("passed('TriggerIdLoose')",bool,doc="TriggerIdLoose ID"),
@@ -179,10 +178,9 @@ muonTable = simpleCandidateFlatTableProducer.clone(
     ),
 )
 
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2\
- | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTable.variables,mvaIDMuon=None).toModify(
-     muonTable.variables, mvaIDMuon_WP = Var("userFloat('mvaIDMuon_wpMedium') + userFloat('mvaIDMuon_wpTight')", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
-                          mvaIDMuon = Var("userFloat('mvaIDMuon')", float, doc="MVA-based ID score",precision=6))
+(run2_nanoAOD_106Xv2 | run3_nanoAOD_122).toModify(muonTable.variables,mvaMuID=None).toModify(
+     muonTable.variables, mvaMuID_WP = Var("userFloat('mvaMuID_wpMedium') + userFloat('mvaMuID_wpTight')", "uint8", doc="MVA-based ID selector WPs (1=MVAIDwpMedium,2=MVAIDwpTight)"),
+                          mvaMuID = Var("userFloat('mvaMuID')", float, doc="MVA-based ID score",precision=6))
 
 # Revert back to AK4 CHS jets for Run 2
 run2_nanoAOD_ANY.toModify(
@@ -215,6 +213,6 @@ muonTask = cms.Task(slimmedMuonsUpdated,isoForMu,ptRatioRelForMu,slimmedMuonsWit
 muonMCTask = cms.Task(muonsMCMatchForTable,muonMCTable)
 muonTablesTask = cms.Task(muonMVATTH,muonMVALowPt,muonTable)
 
-(run2_miniAOD_80XLegacy | run2_nanoAOD_92X | run2_nanoAOD_94X2016 | run2_nanoAOD_94XMiniAODv1 | run2_nanoAOD_94XMiniAODv2 | run2_nanoAOD_102Xv1 | run2_nanoAOD_106Xv1 | run2_nanoAOD_106Xv2 |  run3_nanoAOD_122 ).toModify(muonTask,muonTask.add(muonMVAID))
+(run2_nanoAOD_106Xv2 | run3_nanoAOD_122).toModify(muonTask,muonTask.add(muonMVAID))
 
 
