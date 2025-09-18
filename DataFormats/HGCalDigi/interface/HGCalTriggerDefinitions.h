@@ -11,7 +11,7 @@ namespace hgcal {
                        TDAQ_WBX_POS = 20, TDAQ_WBX_MASK = 0xf,
                        TDAQ_BUF_STAT_POS = 16, TDAQ_BUF_STAT_MASK = 0xf,
                        TDAQ_CHANNEL_ID_POS = 8, TDAQ_CHANNEL_ID_MASK = 0xff,
-                       TDAQ_PKT_LENGTH_POS = 0, TDAQ_BLOCK_LENGTH_MASK = 0xffff;
+                       TDAQ_PKT_LENGTH_POS = 0, TDAQ_PKT_LENGTH_MASK = 0xffff;
                       
   }  // namespace BACKEND_FRAME
 
