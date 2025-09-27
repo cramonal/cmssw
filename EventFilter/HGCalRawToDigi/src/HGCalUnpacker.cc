@@ -474,3 +474,4 @@ uint16_t HGCalUnpacker::parseFEDData(unsigned fedId,
   return (0x1 << hgcaldigi::FEDUnpackingFlags::NormalUnpacking) |
          (hasActiveCBFlags << hgcaldigi::FEDUnpackingFlags::ActiveCaptureBlockFlags);
 }
+
