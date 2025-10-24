@@ -121,7 +121,7 @@ public:
               mod_config_data, modkey, modkeys, modjsonurl);  // check required keys are in the JSON, warn otherwise
           //sanity check
           size_t nTC_calv = mod_config_data[modkey]["calv"].size();
-          size_t nTC_mux = mod_config_data[modkey]["tcMux"].size();
+          size_t nTC_mux = mod_config_data[modkey]["mux"].size();
           size_t nTC = moduleMap.getNumChannels(typecode);
           if(nTC != nTC_mux || nTC != nTC_calv){
             continue;
@@ -138,7 +138,7 @@ public:
           econtConfig.offset.resize(nTC);
           for(std::size_t iTC=0;iTC<nTC;iTC++){
             econtConfig.calv[iTC] = mod_config_data[modkey]["calv"][iTC];
-            econtConfig.tcMux[iTC] = mod_config_data[modkey]["tcMux"][iTC];
+            econtConfig.tcMux[iTC] = mod_config_data[modkey]["mux"][iTC];
             econtConfig.offset[iTC] = calculateCellOffset(); //TODO: change this when we know how to calcualte
           }
           // Caculate module number in the TDAQ
