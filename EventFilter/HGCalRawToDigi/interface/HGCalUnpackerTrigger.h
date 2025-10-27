@@ -22,7 +22,7 @@ class HGCalUnpackerTrigger {
 public:
   HGCalUnpackerTrigger() {}
   bool parseFEDData(unsigned fedId,const RawFragmentWrapper& fed_data,const HGCalTriggerConfiguration& config,const HGCalMappingModuleIndexerTrigger& moduleIndexer,hgcaldigi::HGCalDigiTriggerHost& digisTrigger);
-  bool parseTDAQBlock() {return true;}
+  bool parseTDAQBlock() ;
 
 private:
   // std::unique_ptr<HGCalUnpackerTriggerSpecialization> unpackerSpecialization_;

@@ -15,6 +15,7 @@ void HGCalMappingModuleIndexerTrigger::processNewModule(uint32_t fedid,
                                                         uint32_t nTrLinks,
                                                         uint32_t nTCs,
                                                         std::string const& typecode) {
+  
   // add fed if needed
   if (fedid >= fedReadoutSequences_.size()) {
     fedReadoutSequences_.resize(fedid + 1);

@@ -54,6 +54,12 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
   
   hgcaldigi::HGCalDigiTriggerHost digisTrigger(moduleIndexer.maxDataSize(), cms::alpakatools::host());
   const auto& fedBuffer = iEvent.get(fedRawTriggerToken_);
+
+  for (int32_t i = 0; i < digisTrigger.view().metadata().size(); i++) {
+    digisTrigger.view()[i].valid() = false;
+    digisTrigger.view()[i].algo() = 0;
+  }
+
   for(const auto& frs :  moduleIndexer.fedReadoutSequences() ) {
     if (frs.readoutTypes_.empty()) {
       continue;

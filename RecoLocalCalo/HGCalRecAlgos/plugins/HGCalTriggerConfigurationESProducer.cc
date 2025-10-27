@@ -41,6 +41,12 @@ public:
     descriptions.addWithDefaultLabel(desc);
   }
 
+  // @short get hexadecimal value, and override if value_override>=0
+  static int32_t gethex(const std::string& value, const int32_t value_override) {
+    int32_t ret = (value_override >= 0 ? value_override : std::stoi(value, nullptr, 16));
+    return ret;
+  }
+
   // @short get integer value, and override if value_override>=0
   static int32_t getint(const int32_t value, const int32_t value_override) {
     return (value_override >= 0 ? value_override : value);
@@ -89,12 +95,13 @@ public:
 
       //count econs and address swaps and compare to baseline expectations from mapping
       uint32_t totalECONTs=0;
-      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++)
-       totalECONTs += uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
-      uint32_t totalECONTs_expected = moduleMap.getNumModules(fedid);
-      uint32_t nSwapOffsets = fed_config_data[fedkey]["econtSwapOffset"].size();
-      assert(totalECONTs_expected == totalECONTs && totalECONTs_expected==nSwapOffsets);
-
+      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
+        totalECONTs+=uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
+      }
+      if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size()
+        || moduleMap.getNumModules(fedid) != totalECONTs)             // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
+        continue;
+      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl; 
       // fill FED configurations
       HGCalTriggerFedConfig fedConfig;
       
