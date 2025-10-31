@@ -92,13 +92,12 @@ public:
       uint32_t nTDAQ = uint32_t(fed_config_data[fedkey]["tdaqFlag"].size());
       uint32_t size_econt_list = uint32_t(fed_config_data[fedkey]["neconts"].size());
       assert(nTDAQ==size_econt_list);
-
+ 
       //count econs and address swaps and compare to baseline expectations from mapping
       uint32_t totalECONTs=0;
       for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
 	   totalECONTs+=uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
       }
-      
       if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size()
         || moduleMap.getNumModules(fedid) != totalECONTs)             // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
         continue;
@@ -124,8 +123,7 @@ public:
         for (const auto& [typecode, ids] : moduleMap.typecodeMap()) {
 
 	  auto [fedid_, imod] = ids;
-
-          if ( (fedid_ != fedid) || (totalECONTs>=imod)){
+          if ( (fedid_ != fedid) || !(totalECONTs<=imod && imod<totalECONTs+nECONT)){
             continue;
           }
           const auto modkey = hgcal::search_modkey(typecode, mod_config_data, modjsonurl);  // search matching key
@@ -136,7 +134,6 @@ public:
           size_t nTC_mux = mod_config_data[modkey]["mux"].size();
           //size_t nTC = moduleMap.getNumChannels(typecode);
 	  size_t nTC = mod_config_data[modkey]["mux"].size();
-
           if(nTC != nTC_mux || nTC != nTC_calv){
             continue;
           }
@@ -158,7 +155,7 @@ public:
           }
           // Caculate module number in the TDAQ
           uint32_t iecont = imod - totalECONTs;
-	  tdaqConfig.econts.resize(12); // to fix so it's not hardcoded
+	  tdaqConfig.econts.resize(nECONT); //resize so length is the number of econTs
  
 	  tdaqConfig.econts[iecont] = econtConfig;
         }
