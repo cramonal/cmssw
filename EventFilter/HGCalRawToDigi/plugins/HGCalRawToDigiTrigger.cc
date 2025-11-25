@@ -56,7 +56,7 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
   const auto& fedBuffer = iEvent.get(fedRawTriggerToken_);
 
   for (int32_t i = 0; i < digisTrigger.view().metadata().size(); i++) {
-    digisTrigger.view()[i].valid() = false;
+    for (int32_t ibx = 0; ibx < 7; ibx++) digisTrigger.view()[i].valid()(ibx,0) = false;
     digisTrigger.view()[i].algo() = 0;
   }
 

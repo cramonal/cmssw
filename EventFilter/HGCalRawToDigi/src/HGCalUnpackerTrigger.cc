@@ -18,6 +18,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   
   // TODO: if this also depends on the unpacking configuration, it should be moved to the specialization
   //const auto& fedConfig = config.feds[fedId];
+  const auto& fedReadoutSequence = moduleIndexer.fedReadoutSequences()[fedId];
   const auto* start_fed_data = &(fed_data.data().front());
   const auto* const header = reinterpret_cast<const uint64_t*>(start_fed_data);
   const auto* const trailer = reinterpret_cast<const uint64_t*>(start_fed_data + fed_data.size());
@@ -35,7 +36,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     sprintf(word64,"0x%016lx",tword);
     sprintf(word32m,"0x%08x",tword32m);
     sprintf(word32l,"0x%08x",tword32l);
-    // std::cout << "HGCalUnpackerTrigger::parseFEDData::tword 0x" << std::hex << std::setfill('0') <<  tword << std::dec << std::setfill(' ') << std::endl;    
+
     LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")" << std::endl;
     ++ptr;
   }
@@ -48,7 +49,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     tsh->print();
     return false;
   }
-  
+
   tsh=tsh->nextSubpacketHeader();
   int noffecafe = 0;
   bool done(false);
@@ -63,7 +64,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	unsigned emp_chan(tsh->channelId()/2);
 	//// WE NEED **CONFIGURE** THE MODULES TO BE READ, 100 stands for the first module
 	//if(emp_chan==100 or emp_chan==102 or emp_chan==104 or emp_chan==108){
-	if(emp_chan==100){
+	if(emp_chan==100 or emp_chan==102){
 	  //// WE NEED TO **CONFIGURE** THE Number of ECONT-s connected to this emp_channel and then nof elinks associated with each ECON-T
 	  uint32_t nEconTs = 1 ; //// A test setting but needs to be **CONFIGURE** ed from json
 	  for(unsigned bx(0);bx<tsh->numberOfBxs();bx++) {
@@ -131,47 +132,52 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
 		//// How much of below will be **CONFIGURE** ed
 		uint32_t econTId = iecon + econTOffset; //unique per fedId
-		uint32_t denseIdx = moduleIndexer.getIndexForModule(fedId, econTId);
-		denseIdx += denseIndexOffset ; //this offset is need to 
 		for(unsigned itc(0) ; itc < rdp.size() ; itc++){
+
+		  uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
+		  // uint32_t denseIdx = tcidx + fedReadoutSequence.TCOffsets_.at(econTId) ; //same as following function call
+		  uint32_t denseIdx = moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) ;
 		  
 		  digisTrigger.view()[denseIdx].algo() = uint8_t(cfgecont.getOutType());
-		  digisTrigger.view()[denseIdx].valid() = true;
-		  digisTrigger.view()[denseIdx].iBx() =  uint8_t(bx);
+		  digisTrigger.view()[denseIdx].valid()(bx,0) = true;
 		  digisTrigger.view()[denseIdx].nBxs() = uint8_t(tsh->numberOfBxs());
 		  digisTrigger.view()[denseIdx].econTId() = econTId;
 		  digisTrigger.view()[denseIdx].nTCs() = uint8_t(cfgecont.getNofTCs());
-		  digisTrigger.view()[denseIdx].bxId() = uint8_t(rdp.bx());
-		  digisTrigger.view()[denseIdx].TotE() = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
-		  digisTrigger.view()[denseIdx].TCEnergy() = uint32_t(rdp.getTc(itc).decodedE(rdp.type()));
-		  digisTrigger.view()[denseIdx].TCAddress() = uint8_t(rdp.getTc(itc).address());
-		  
-		  LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData econTOffset : " << econTOffset
-						      << ", iecon " << iecon
-						      << ", econTId " << econTId
-						      << ", denseIdx_base " << moduleIndexer.getIndexForModule(fedId, econTId)
-						      << ", denseIndexOffset: " << denseIndexOffset
-						      << ", denseIdx: " << denseIdx
-						      << std::endl;
+		  digisTrigger.view()[denseIdx].bxId()(bx,0) = uint8_t(rdp.bx());
+		  digisTrigger.view()[denseIdx].TotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
+		  digisTrigger.view()[denseIdx].TCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).decodedE(rdp.type()));
+		  digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address());
+
+		  LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData fedId : " << fedId
+			     << ", iecon " << iecon
+			     << ", econTId " << econTId
+			     << ", tcidx: " << tcidx
+			     << ", denseIdx: " << denseIdx
+			     << ", getDenseTCIndex00: " << moduleIndexer.getDenseTCIndex(fedId, econTId, 0, tcidx) 
+			     << ", getDenseTCIndex01: " << moduleIndexer.getDenseTCIndex(fedId, econTId+1, 1, tcidx) 
+			     << ", getDenseTCIndex02: " << moduleIndexer.getDenseTCIndex(fedId, econTId+2, 2, tcidx) 
+			     << ", getIndexForModuleData00: " << moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) 
+			     << ", getIndexForModuleData01: " << moduleIndexer.getIndexForModuleData(fedId, econTId+1, tcidx) 
+			     << ", getIndexForModuleData02: " << moduleIndexer.getIndexForModuleData(fedId, econTId+2, tcidx) 
+			     << std::endl;
 		  LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData "
-						       << " algo = " << uint16_t(digisTrigger.view()[denseIdx].algo())
-						       << ", valid = " << uint16_t(digisTrigger.view()[denseIdx].valid())
-						       << ", nBxs = " << uint16_t(digisTrigger.view()[denseIdx].nBxs())
-						       << ", nTCs = " << uint16_t(digisTrigger.view()[denseIdx].nTCs())
-						       << ", iBx = " << uint16_t(digisTrigger.view()[denseIdx].iBx())
-						       << ", ieconTId = " << uint32_t(digisTrigger.view()[denseIdx].econTId())
-						       << std::endl;
+			     << " algo = " << uint16_t(digisTrigger.view()[denseIdx].algo())
+			     << ", valid = " << uint16_t(digisTrigger.view()[denseIdx].valid()(bx,0))
+			     << ", nBxs = " << uint16_t(digisTrigger.view()[denseIdx].nBxs())
+			     << ", nTCs = " << uint16_t(digisTrigger.view()[denseIdx].nTCs())
+			     << ", ieconTId = " << uint32_t(digisTrigger.view()[denseIdx].econTId())
+			     << std::endl;
 		  LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData ibx : " << bx
-						      << ", bxID : " << uint16_t(digisTrigger.view()[denseIdx].bxId())
-						      << ", MS/totE : " << uint32_t(digisTrigger.view()[denseIdx].TotE())
-						      << std::endl;
+			     << ", bxID : " << uint16_t(digisTrigger.view()[denseIdx].bxId()(bx,0))
+			     << ", MS/totE : " << uint32_t(digisTrigger.view()[denseIdx].TotE()(bx,0))
+			     << std::endl;
 		  LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData itc : " << itc
-						      << ", Address: " << uint16_t(digisTrigger.view()[denseIdx].TCAddress())
-						      << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy())
-						      << std::endl;
+			     << ", Address: " << uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0))
+			     << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0))
+			     << std::endl;
 		  denseIdx++;
 		}	      
-		denseIndexOffset += rdp.size();
+		//denseIndexOffset += rdp.size();
 		nprevTxs += neTx;
 	      }//iecon loop
 
