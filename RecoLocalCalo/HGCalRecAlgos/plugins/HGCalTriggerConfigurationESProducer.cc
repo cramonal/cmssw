@@ -178,7 +178,7 @@ private:
     oValidity = edm::ValidityInterval(edm::IOVSyncValue::beginOfTime(), edm::IOVSyncValue::endOfTime());
   }
 
-  edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> indexToken_;
+  edm::ESGetToken<HGCalMappingModuleIndexerTrigger, HGCalElectronicsMappingRcd> indexToken_;
   const edm::FileInPath fedjson_;  // JSON file
   const edm::FileInPath modjson_;  // JSON file
 };
