@@ -23,9 +23,9 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   const auto* const header = reinterpret_cast<const uint64_t*>(start_fed_data);
   const auto* const trailer = reinterpret_cast<const uint64_t*>(start_fed_data + fed_data.size());
   
-  LogDebug("[HGCalUnpackerTrigger]") << " nwords (64b) = " << std::distance(header, trailer) << "\n";
+  std::cout << "[HGCalUnpackerTrigger]" << " nwords (64b) = " << std::distance(header, trailer) << "\n"<< std::endl;
 
-  
+  HGCalTriggerFedConfig fedConfig = config.feds[fedId];
   const uint64_t* ptr = header;
   char num[10], word64[20], word32m[20], word32l[20];
   for (unsigned iword = 0; ptr < trailer; ++iword) {
@@ -37,7 +37,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     sprintf(word32m,"0x%08x",tword32m);
     sprintf(word32l,"0x%08x",tword32l);
 
-    LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")" << std::endl;
+    std::cout << "[HGCalUnpackerTrigger]"  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")" << std::endl;
     ++ptr;
   }
   
@@ -53,20 +53,34 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   tsh=tsh->nextSubpacketHeader();
   int noffecafe = 0;
   bool done(false);
-  uint32_t econTOffset = 0; ///THIS DEPENDS ON module
+  uint32_t econTOffset = 0; ///THIS DEPENDS ON module 
   uint32_t denseIndexOffset = 0 ;
+  uint32_t TdaqIdx = 0;  
   while(tsh<=tshEnd && !done) {
     if(!tsh->validPattern()) {
       done=true;	
     } else {
-      if((tsh->channelId()%2)==0) { // RX only
-	//tsh->print();	  
+	            //tsh->print();
+
+      if((tsh->channelId()%2)==0) { // do we need this? 
+	std::cout << "tdaq idx " << TdaqIdx  << std::endl;
+	tsh->print();	  
 	unsigned emp_chan(tsh->channelId()/2);
 	//// WE NEED **CONFIGURE** THE MODULES TO BE READ, 100 stands for the first module
 	//if(emp_chan==100 or emp_chan==102 or emp_chan==104 or emp_chan==108){
-	if(emp_chan==100 or emp_chan==102){
-	  //// WE NEED TO **CONFIGURE** THE Number of ECONT-s connected to this emp_channel and then nof elinks associated with each ECON-T
-	  uint32_t nEconTs = 1 ; //// A test setting but needs to be **CONFIGURE** ed from json
+	//std::cout << "CHannel " <<emp_chan  << std::endl; //if tdaqIdx is valid
+	//if(emp_chan==100 or emp_chan==102){
+	HGCalTDAQConfig tdaqConfig = fedConfig.tdaqs[TdaqIdx];
+	uint32_t isValidTdaq;
+	isValidTdaq = tdaqConfig.econts.size();
+        std::cout << "tdaqsize" << isValidTdaq<< std::endl;
+	if (isValidTdaq != 0){
+           //if(TdaqIdx == 2 or TdaqIdx == 4){
+        //if(emp_chan==100 or emp_chan==102){
+	 
+       	//// WE NEED TO **CONFIGURE** THE Number of ECONT-s connected to this emp_channel and then nof elinks associated with each ECON-T
+	  //uint32_t nEconTs = 1 ; //// A test setting but needs to be **CONFIGURE** ed from json
+	  uint32_t nEconTs = isValidTdaq;
 	  for(unsigned bx(0);bx<tsh->numberOfBxs();bx++) {
 	    const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx()));
 	    uint32_t *elinks = new uint32_t[tsh->numberOfWordsPerBx()];
@@ -91,17 +105,25 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	    }
 
 	    //// WE NEED TO **CONFIGURE** THE Channel number for Si and Scitillators
-	    if(emp_chan!=123){
+
+	    //if(emp_chan!=123){
 	      // /////////////////////////// Si ////////////////////////////
 	      uint32_t nprevTxs = 0 ;
 	      for(unsigned iecon(0) ; iecon < nEconTs ; iecon++) {
+		 const auto& econt_conf = tdaqConfig.econts[iecon];
 		//// WE NEED TO **CONFIGURE** the nof elinks associated with each ECON-T
-		const int neTx = 4;
+		//uint32_t econTOffset = fedConfig.econtSwapOffset[iecon];
+                //std::cout << "offset " << econTOffset << std::endl;
+		const int neTx = econt_conf.eportTxNumen;
+		std::cout << "neTx " << neTx << std::endl;
 		uint32_t *el = new uint32_t[neTx];
 		TPGFEConfiguration::ConfigEconT cfgecont;
 		cfgecont.setNElinks(uint32_t(neTx));
 		// // WE NEED TO **CONFIGURE** ECONT mode
-		cfgecont.setSelect(2); //2 for bast choice
+		const int select = econt_conf.select;
+		std::cout << "select " << select << std::endl;
+
+		cfgecont.setSelect(select);
 
 		/*//-----------------------------*/
 		//Run 110693
@@ -124,7 +146,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 		TPGFEDataformat::TcRawDataPacket rdp;
 		TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(cfgecont.getOutType(), cfgecont.getNofTCs(), el, rdp);		
 		//rdp.print();
-		
+		std::cout <<  "TCs "<< cfgecont.getNofTCs() <<  " out "<< cfgecont.getOutType() << " econTId " << iecon << " offset "  << econTOffset << " nElinks "<< cfgecont.getNElinks() << " Select " << cfgecont.getSelect()  << std::endl;
+
 		delete [] el;
 		
 		uint32_t totE = 0;
@@ -182,65 +205,16 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      }//iecon loop
 
 	      // /////////////////////////// Si ////////////////////////////
-	    }else{
-	      /// The following part of Sci will be trated same way as the Si after the CONFIGURE ATION is advanced 
-	      /////////////////////////// Sci ////////////////////////////
-	      const int neTx1 = 4;
-	      const int neTx2 = 3;
-	      uint32_t *el1 = new uint32_t[neTx1];
-	      uint32_t *el2 = new uint32_t[neTx2];
-	      el1[0] = elinks[1];
-	      el1[1] = elinks[0];
-	      el1[2] = elinks[2];
-	      el1[3] = elinks[3];
-	      
-	      el2[0] = elinks[4];
-	      el2[1] = elinks[5];
-	      el2[2] = elinks[6];
-	      
-	      //Run 111137 and 111138
-	      // el[0] = elinks[6];
-	      // el[1] = elinks[5];
-	      // el[2] = elinks[4];
-	      // if(neTx>3) el[3] = elinks[3];
-	      
-	      for(unsigned iel(0);iel<neTx1;iel++){
-		std::cout << "\t\t el1 " << std::setw(3) << iel << " = 0x"
-			  << std::hex << std::setfill('0')
-			  << std::setw(8) << el1[iel]
-			  << std::dec << std::setfill(' ')
-			  << std::endl;	      		
-	      }
-	      
-	      for(unsigned iel(0);iel<neTx2;iel++){
-		std::cout << "\t\t el1 " << std::setw(3) << iel << " = 0x"
-			  << std::hex << std::setfill('0')
-			  << std::setw(8) << el2[iel]
-			  << std::dec << std::setfill(' ')
-			  << std::endl;	      		
-	      }
-	      
-	      TPGFEDataformat::TcRawDataPacket rdp1, rdp2;
-	      TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(TPGFEDataformat::STC4A, 12, el1, rdp1);
-	      rdp1.print();
-	      TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(TPGFEDataformat::STC4A, 10, el2, rdp2);
-	      rdp2.print();
-
-	      uint64_t tot0 = 0, tot1 = 0;
-	      for(const auto& itc: rdp1.getTcData()) tot0 += itc.decodedE(rdp1.type());
-	      for(const auto& itc: rdp2.getTcData()) tot1 += itc.decodedE(rdp2.type());
-	      std::cout << "tot0: " << tot0 << ", tot1: " << tot1 << std::endl;
-	      
-	      delete []el1;
-	      delete []el2;
-	      /////////////////////////// Sci ////////////////////////////
-	    }
-	    delete []elinks;
+	    //}else{
+	     /////////////////////////// Sci ////////////////////////////
+	     //}
+	      delete []elinks;
 	  }
 	  econTOffset += nEconTs;
 	}//list of valid emp channel
+      //}
       }
-	
+      TdaqIdx++;
       tsh=tsh->nextSubpacketHeader();
     }
     noffecafe++;

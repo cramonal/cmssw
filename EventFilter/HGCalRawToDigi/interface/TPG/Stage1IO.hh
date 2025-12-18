@@ -29,7 +29,7 @@ public:
     
     std::vector<TPGFEDataformat::TcRawData> &vTc(vTcrdp.setTcData());
     
-    bool doPrint(false);
+    bool doPrint(true);
 
     if(doPrint) {      
       for(unsigned i(0);i<2;i++) {
