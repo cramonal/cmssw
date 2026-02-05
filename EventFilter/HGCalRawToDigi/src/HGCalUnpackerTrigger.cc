@@ -62,24 +62,15 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     } else {
 	            //tsh->print();
 
-      if((tsh->channelId()%2)==0) { // do we need this? 
 	std::cout << "tdaq idx " << TdaqIdx  << std::endl;
 	tsh->print();	  
 	unsigned emp_chan(tsh->channelId()/2);
-	//// WE NEED **CONFIGURE** THE MODULES TO BE READ, 100 stands for the first module
-	//if(emp_chan==100 or emp_chan==102 or emp_chan==104 or emp_chan==108){
-	//std::cout << "CHannel " <<emp_chan  << std::endl; //if tdaqIdx is valid
-	//if(emp_chan==100 or emp_chan==102){
 	HGCalTDAQConfig tdaqConfig = fedConfig.tdaqs[TdaqIdx];
 	uint32_t isValidTdaq;
 	isValidTdaq = tdaqConfig.econts.size();
         std::cout << "tdaqsize" << isValidTdaq<< std::endl;
 	if (isValidTdaq != 0){
-           //if(TdaqIdx == 2 or TdaqIdx == 4){
-        //if(emp_chan==100 or emp_chan==102){
 	 
-       	//// WE NEED TO **CONFIGURE** THE Number of ECONT-s connected to this emp_channel and then nof elinks associated with each ECON-T
-	  //uint32_t nEconTs = 1 ; //// A test setting but needs to be **CONFIGURE** ed from json
 	  uint32_t nEconTs = isValidTdaq;
 	  for(unsigned bx(0);bx<tsh->numberOfBxs();bx++) {
 	    const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx()));
@@ -104,47 +95,35 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 						  << std::endl;	      
 	    }
 
-	    //// WE NEED TO **CONFIGURE** THE Channel number for Si and Scitillators
 
-	    //if(emp_chan!=123){
-	      // /////////////////////////// Si ////////////////////////////
 	      uint32_t nprevTxs = 0 ;
 	      for(unsigned iecon(0) ; iecon < nEconTs ; iecon++) {
-		 const auto& econt_conf = tdaqConfig.econts[iecon];
-		//// WE NEED TO **CONFIGURE** the nof elinks associated with each ECON-T
-		//uint32_t econTOffset = fedConfig.econtSwapOffset[iecon];
-                //std::cout << "offset " << econTOffset << std::endl;
+	        const auto& econt_conf = tdaqConfig.econts[iecon];
 		const int neTx = econt_conf.eportTxNumen;
 		std::cout << "neTx " << neTx << std::endl;
 		uint32_t *el = new uint32_t[neTx];
 		TPGFEConfiguration::ConfigEconT cfgecont;
 		cfgecont.setNElinks(uint32_t(neTx));
-		// // WE NEED TO **CONFIGURE** ECONT mode
 		const int select = econt_conf.select;
 		std::cout << "select " << select << std::endl;
 
 		cfgecont.setSelect(select);
 
-		/*//-----------------------------*/
-		//Run 110693
-		// el[0] = elinks[nprevTxs+2];
-		// el[1] = elinks[nprevTxs+1];
-		// el[2] = elinks[nprevTxs+0];
-		// el[3] = elinks[nprevTxs+3];
-		/*///-----------------------------*/
-		
-		/*//-----------------------------*/
-		//Run 111137 and 111138 for later runs use the one below
-		//for(int iel=0;iel<neTx;iel++) el[iel] = elinks[nprevTxs + (6-iel)];
-		/*///-----------------------------*/
-		
-		/*//-----------------------------*/
-		//Runs >= 111139
 		for(int iel=0;iel<neTx;iel++) el[iel] = elinks[nprevTxs + iel];
-		/*///-----------------------------*/
 		
 		TPGFEDataformat::TcRawDataPacket rdp;
-		TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(cfgecont.getOutType(), cfgecont.getNofTCs(), el, rdp);		
+                try {
+                    TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(cfgecont.getOutType(), cfgecont.getNofTCs(), el, rdp);
+                }
+                catch (cms::Exception &e) {
+                 edm::LogWarning("Stage1IORecoverable")
+                 << "Skipping ECON-T " << iecon
+                 << " (neTx=" << neTx << ")\n"
+                 << e.what();
+
+                  continue;
+                }
+
 		//rdp.print();
 		std::cout <<  "TCs "<< cfgecont.getNofTCs() <<  " out "<< cfgecont.getOutType() << " econTId " << iecon << " offset "  << econTOffset << " nElinks "<< cfgecont.getNElinks() << " Select " << cfgecont.getSelect()  << std::endl;
 
@@ -157,7 +136,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 		uint32_t econTId = iecon + econTOffset; //unique per fedId
 		for(unsigned itc(0) ; itc < rdp.size() ; itc++){
 
-		  uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
+		  //uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
+		  uint32_t tcidx = itc;
 		  // uint32_t denseIdx = tcidx + fedReadoutSequence.TCOffsets_.at(econTId) ; //same as following function call
 		  uint32_t denseIdx = moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) ;
 		  
@@ -198,22 +178,16 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 			     << ", Address: " << uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0))
 			     << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0))
 			     << std::endl;
-		  denseIdx++;
+		 //denseIdx++;
 		}	      
 		//denseIndexOffset += rdp.size();
 		nprevTxs += neTx;
 	      }//iecon loop
 
-	      // /////////////////////////// Si ////////////////////////////
-	    //}else{
-	     /////////////////////////// Sci ////////////////////////////
-	     //}
 	      delete []elinks;
 	  }
 	  econTOffset += nEconTs;
 	}//list of valid emp channel
-      //}
-      }
       TdaqIdx++;
       tsh=tsh->nextSubpacketHeader();
     }
