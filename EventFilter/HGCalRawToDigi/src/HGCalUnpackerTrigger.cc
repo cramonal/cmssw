@@ -10,7 +10,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                                         const RawFragmentWrapper& fed_data,
                                         const HGCalTriggerConfiguration& config,
                                         const HGCalMappingModuleIndexerTrigger& moduleIndexer,
-                                        hgcaldigi::HGCalDigiTriggerHost& digisTrigger) {
+                                        hgcaldigi::HGCalDigiTriggerHost& digisTrigger,
+					hgcaldigi::HGCalECONTPacketInfoHost& econtPacketInfo) {
   
   // Endianness assumption
   // From 32-bit word(ECOND) to 64-bit word(capture block): little endianness
@@ -56,7 +57,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   uint32_t econTOffset = 0; ///THIS DEPENDS ON module 
   uint32_t denseIndexOffset = 0 ;
   uint32_t TdaqIdx = 0;  
-  while(tsh<=tshEnd && !done) {
+  while(tsh<=tshEnd && !done && TdaqIdx < 3 ) {
     if(!tsh->validPattern()) {
       done=true;	
     } else {
@@ -65,6 +66,15 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	std::cout << "tdaq idx " << TdaqIdx  << std::endl;
 	tsh->print();	  
 	unsigned emp_chan(tsh->channelId()/2);
+	if (TdaqIdx >= fedConfig.tdaqs.size()) {
+	  std::cout << "aqui"<< std::endl;
+	  edm::LogWarning("HGCalUnpackerTrigger")
+	      << "TDAQ index out of range for FED " << fedId << ": idx=" << TdaqIdx
+	      << ", size=" << fedConfig.tdaqs.size() << ". Skipping remaining subpackets.";
+	  done = true;
+	  break;
+	}
+
 	HGCalTDAQConfig tdaqConfig = fedConfig.tdaqs[TdaqIdx];
 	uint32_t isValidTdaq;
 	isValidTdaq = tdaqConfig.econts.size();
@@ -74,6 +84,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	  uint32_t nEconTs = isValidTdaq;
 	  for(unsigned bx(0);bx<tsh->numberOfBxs();bx++) {
 	    const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx()));
+	    const uint32_t econTLocation = static_cast<uint32_t>(el64packed - header);
 	    uint32_t *elinks = new uint32_t[tsh->numberOfWordsPerBx()];
 	    for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) {
 	      elinks[2*j] = el64packed[j] & 0xffffffff;
@@ -111,6 +122,16 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
 		for(int iel=0;iel<neTx;iel++) el[iel] = elinks[nprevTxs + iel];
 		
+                uint32_t econTId = iecon + econTOffset; //unique per fedId
+		uint32_t econtDenseIdx = moduleIndexer.getIndexForModule(fedId, econTId);
+		std::cout <<  "ECONT dense "<< econtDenseIdx << " econtid " << econTId << std::endl;
+		if (bx == 0) {
+		  econtPacketInfo.view()[econtDenseIdx].exception() = 0;
+		  econtPacketInfo.view()[econtDenseIdx].location() = econTLocation;
+		  econtPacketInfo.view()[econtDenseIdx].payloadLength() = static_cast<uint16_t>(neTx);
+		}
+
+
 		TPGFEDataformat::TcRawDataPacket rdp;
                 try {
                     TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(cfgecont.getOutType(), cfgecont.getNofTCs(), el, rdp);
@@ -120,8 +141,13 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                  << "Skipping ECON-T " << iecon
                  << " (neTx=" << neTx << ")\n"
                  << e.what();
-
-                  continue;
+                 if (bx == 0) {
+                    econtPacketInfo.view()[econtDenseIdx].exception() = 1;
+                    econtPacketInfo.view()[econtDenseIdx].location() = econTLocation;
+                    econtPacketInfo.view()[econtDenseIdx].payloadLength() = static_cast<uint16_t>(neTx);
+                  }
+ 
+		 continue;
                 }
 
 		//rdp.print();
@@ -133,7 +159,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 		for(const auto& itc: rdp.getTcData()) totE += itc.decodedE(rdp.type());
 
 		//// How much of below will be **CONFIGURE** ed
-		uint32_t econTId = iecon + econTOffset; //unique per fedId
+		
 		for(unsigned itc(0) ; itc < rdp.size() ; itc++){
 
 		  //uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
