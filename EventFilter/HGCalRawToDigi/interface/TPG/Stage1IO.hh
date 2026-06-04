@@ -42,7 +42,12 @@ public:
     //if(v.size()==0) return;
     //if(v.size()>=4) return; // FIXME
 
+    // ECONT header
     unsigned bx(v[0]>>28);
+    if (doPrint){
+      std::cout << std::hex << " 32bit word: " << v[0]
+                << std::dec << " ECONT header: " << bx << std::endl;
+    }
     bool bitMap(false);
     if(type==TPGFEDataformat::BestC) bitMap=(nTc>7);
     

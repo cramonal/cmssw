@@ -3,7 +3,7 @@
 #include "EventFilter/HGCalRawToDigi/interface/TPG/TPGBEDataformat.hh"
 #include "EventFilter/HGCalRawToDigi/interface/TPG/Stage1IO.hh"
 #include "EventFilter/HGCalRawToDigi/interface/TPG/TpgSubpacketHeader.h"
-
+#include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
 using namespace hgcal;
 
 bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
@@ -22,7 +22,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   const auto* start_fed_data = &(fed_data.data().front());
   const auto* const header = reinterpret_cast<const uint64_t*>(start_fed_data);
   const auto* const trailer = reinterpret_cast<const uint64_t*>(start_fed_data + fed_data.size());
+  
+  uint16_t BXSLink = ((*(trailer - 1) >> BACKEND_FRAME::SLINK_BXID_POS) & BACKEND_FRAME::SLINK_BXID_MASK);
 
+  
   edm::LogWarning("[HGCalUnpackerTrigger]") << " nwords (64b) = " << std::distance(header, trailer) << "\n";
 
   HGCalTriggerFedConfig fedConfig = config.feds[fedId];
@@ -36,7 +39,6 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     sprintf(word64,"0x%016lx",tword);
     sprintf(word32m,"0x%08x",tword32m);
     sprintf(word32l,"0x%08x",tword32l);
-
     LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")";
     ++ptr;
   }
@@ -57,10 +59,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     uint32_t isValidTdaq;
     isValidTdaq = tdaqConfig.econts.size();
 
-    //std::cout << "tdaq idx: "   << TdaqIdx 
-    //          << ", tdaqsize: " << isValidTdaq << std::endl;
+    // std::cout << "tdaq idx: "   << TdaqIdx 
+    //           << ", tdaqsize: " << isValidTdaq << std::endl;
      
-    //tsh->print();	  
+    // tsh->print();	  
     if (isValidTdaq != 0){
     
 
@@ -110,7 +112,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	  const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); 
 	  const uint32_t econTLocation = static_cast<uint32_t>(el64packed - header); // should be changed, not clear how
 	  std::unique_ptr<uint32_t[]> elinks(new uint32_t[unsigned(tsh->numberOfWordsPerBx())*2*2]); // allocate 16 in case of tpairs, supposing every packet has same number of words
-          uint8_t elink_offset = 0; // offset 0 for first tdaq in the pair, 7 for the second one
+      uint8_t elink_offset = 0; // offset 0 for first tdaq in the pair, 7 for the second one
 
 	  //filling first 7 elinks 
 	  for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
@@ -128,12 +130,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      				  << std::hex << std::setfill('0')
 	      				  << std::setw(16) << word64
 	      				  << std::dec << std::setfill(' ')
-	      				  << std::endl;	      
-	    
-	    
+	      				  << std::endl;	        
 	  }
 
-          if (isPair) { //only for pairs, reading toghether the next tpg subpacket (second tdaq)
+      if (isPair) { //only for pairs, reading toghether the next tpg subpacket (second tdaq)
 	    tsh = tsh->nextSubpacketHeader(); // going to next subpacket
 	    //std::cout << " going to next subpacket for remaining 7 elinks " << std::endl;
 	    //tsh->print();
@@ -156,13 +156,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   	        				  << std::hex << std::setfill('0')
   	        				  << std::setw(16) << word64
   	        				  << std::dec << std::setfill(' ')
-  	        				  << std::endl;	      
-  	      
-  	      
+  	        				  << std::endl;	        
   	    }
 	    // going back to previous subpacket, so at the next bx you always start from the first tpg of the pair
-            tsh = tsh->prevSubpacketHeader();
-
+        tsh = tsh->prevSubpacketHeader();
 	    //std::cout << " going back to first subpacket" << std::endl;
 	    //tsh->print();
 	  } 
@@ -196,16 +193,21 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	    const int dropLSB = econt_conf.dropLSB;
 	    cfgecont.setDropLSB(dropLSB);
 
-            //std::cout << "dropLSB from cfg: " << dropLSB << " ECONT dropLSB set to: " << cfgecont.getDropLSB() << std::endl; 
+        //std::cout << "dropLSB from cfg: " << dropLSB << " ECONT dropLSB set to: " << cfgecont.getDropLSB() << std::endl; 
 
 	    const bool sumType = econt_conf.sumType;
 	    cfgecont.setMSSumType(sumType);
 
-            //std::cout << "sumType from cfg: " << sumType << " ECONT sumType set to: " << cfgecont.getMSSumType() << std::endl; 
+        // std::cout << "sumType from cfg: " << sumType << " ECONT sumType set to: " << cfgecont.getMSSumType() << std::endl; 
+		
+		// expected ECONT header from Slink BX counter
+		uint16_t  expEcontHeader = TPGFEConfiguration::getExpEcontHeader(BXSLink, cfgecont.getOutType());
+        
+		LogDebug("[HGCalUnpackerTrigger]")   << "Word :: 0x" << std::hex << (*(trailer-1)) << std::dec << " BX counter from Slink " << BXSLink << " , so ECONT header should be " << expEcontHeader << std::endl;
 
 	    for(int iel=0;iel<neTx;iel++) el[iel] = elinks[nprevTxs + iel];
 	    
-            uint32_t econTId = iecon + econTOffset; //unique per fedId
+        uint32_t econTId = iecon + econTOffset; //unique per fedId
 	    uint32_t econtDenseIdx = moduleIndexer.getIndexForModule(fedId, econTId);
 	    //std::cout <<  "ECONT dense "<< econtDenseIdx << " econtid " << econTId << std::endl;
 	    if (bx == 0) {
@@ -237,7 +239,13 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	    //if (bx == 0) rdp.print();
 	    //std::cout <<  "TCs "<< cfgecont.getNofTCs() <<  " out "<< cfgecont.getOutType() << " econTId " << iecon << " offset "  << econTOffset << " nElinks "<< cfgecont.getNElinks() << " Select " << cfgecont.getSelect()  << std::endl;
 
-	    
+	    // check econt bx counter on central bx is aligned with slink one
+        if (bx == 3 && (rdp.bx() != expEcontHeader )) {
+			edm::LogWarning("[HGCalTriggerUnpacker]") << "ECONT header BX counter " << rdp.bx()  
+			                                          << " not matching expected one from Slink " <<  expEcontHeader;
+		}
+
+
 	    uint32_t totE = 0; // module sum, for BC is over all the 48 TCs 
 	    for(const auto& itc: rdp.getTcData()) totE += itc.decodedE(rdp.type()) >> cfgecont.getDropLSB();
 
@@ -246,7 +254,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
 	      //uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
 	      uint32_t tcidx = itc;
-	      // uint32_t denseIdx = tcidx + fedReadoutSequence.TCOffsets_.at(econTId) ; //same as following function call
+	      //uint32_t denseIdx = tcidx + fedReadoutSequence.TCOffsets_.at(econTId) ; //same as following function call
 	      uint32_t denseIdxRaw = moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) ; // before any swapping
 	     
 	      // offset in 2 steps, first mux then econts 
@@ -255,7 +263,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      uint32_t denseIdxOffset =  tcMuxSwapOffset + econtSwapOffset; 
 
 	      // get offset directly from config file
-              //uint32_t denseIdxOffset =  econt_conf.offset[itc]; 
+          //uint32_t denseIdxOffset =  econt_conf.offset[itc]; 
 
 	      uint32_t denseIdx = denseIdxRaw + denseIdxOffset; // applying offset accounting for TCs and econts swapping
 
@@ -265,12 +273,13 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      digisTrigger.view()[denseIdx].nBxs() = uint8_t(tsh->numberOfBxs());
 	      digisTrigger.view()[denseIdx].econTId() = econTId;
 	      digisTrigger.view()[denseIdx].nTCs() = uint8_t(cfgecont.getNofTCs());
-	      digisTrigger.view()[denseIdx].bxId()(bx,0) = uint8_t(rdp.bx());
+	      digisTrigger.view()[denseIdx].econtHeader()(bx,0) = uint8_t(rdp.bx());
+		  digisTrigger.view()[denseIdx].expEcontHeader()(bx,0) = uint8_t(expEcontHeader);
 	      digisTrigger.view()[denseIdx].TotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
 	      digisTrigger.view()[denseIdx].TCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).decodedE(rdp.type()) << cfgecont.getDropLSB());
 	      digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address());
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData fedId : " << fedId
-                     << ", iecon: " << iecon
+                 << ", iecon: " << iecon
 	             << ", econTId: " << econTId
 	             << ", tcidx: " << tcidx
 	             << ", denseIdxRaw: " << denseIdxRaw
@@ -294,7 +303,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	             << ", ieconTId = " << uint32_t(digisTrigger.view()[denseIdx].econTId())
 	             << std::endl;
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData ibx : " << bx
-	             << ", bxID : " << uint16_t(digisTrigger.view()[denseIdx].bxId()(bx,0))
+	             << ", econt header : " << uint16_t(digisTrigger.view()[denseIdx].econtHeader()(bx,0))
+				 << ", expected econt header from Slink : " << uint16_t(digisTrigger.view()[denseIdx].expEcontHeader()(bx,0))
 	             << ", MS/totE : " << uint32_t(digisTrigger.view()[denseIdx].TotE()(bx,0))
 	             << std::endl;
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData itc : " << itc
