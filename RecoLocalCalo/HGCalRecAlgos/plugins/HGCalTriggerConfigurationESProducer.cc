@@ -101,8 +101,13 @@ public:
       }
       if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size() ||
           moduleMap.getNumModules(fedid) !=
-              totalECONTs)  // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
+              totalECONTs){ // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
+        std::cout << " total ECONTs " << totalECONTs << " do not match " << moduleMap.getNumModules(fedid) << "in module locator"
+                  << " or SWAP offset size "  << fed_config_data[fedkey]["econtSwapOffset"].size() 
+                  << " do not match " << moduleMap.getNumModules(fedid) << "in module locator" << std::endl;
         continue;
+      }  
+
       std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl;
       // fill FED configurations
       HGCalTriggerFedConfig fedConfig;
@@ -149,7 +154,7 @@ public:
             continue;
           }
           HGCalECONTConfig econtConfig;
-
+          
           econtConfig.density = uint8_t(mod_config_data[modkey]["density"]);
           econtConfig.dropLSB = uint8_t(mod_config_data[modkey]["dropLSB"]);
           econtConfig.select = uint8_t(mod_config_data[modkey]["select"]);
