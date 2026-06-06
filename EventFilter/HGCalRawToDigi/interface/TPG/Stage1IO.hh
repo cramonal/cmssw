@@ -110,7 +110,9 @@ public:
 	
 	lastBit-=1;
 	if(((d>>lastBit)&0x1)!=0) {
-	  vTc.push_back(TPGFEDataformat::TcRawData(type,tc,0));
+    unsigned tcAdd = 47 - tc; // bit map: MSB is the TC 0, LSB is TC 47
+    //std::cout << "index is of bit map is " << tc << " hence tc address is " << tcAdd << std::endl;
+	  vTc.push_back(TPGFEDataformat::TcRawData(type, tcAdd , 0)); 
 	  if(doPrint) vTc.back().print();
 	}
       }
