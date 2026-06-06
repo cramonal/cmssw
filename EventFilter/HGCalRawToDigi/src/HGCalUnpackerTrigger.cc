@@ -4,6 +4,7 @@
 #include "EventFilter/HGCalRawToDigi/interface/TPG/Stage1IO.hh"
 #include "EventFilter/HGCalRawToDigi/interface/TPG/TpgSubpacketHeader.h"
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
+#include "DataFormats/HGCalDigi/interface/HGCalFEDTriggerPacketInfoHost.h"
 using namespace hgcal;
 
 bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
@@ -11,6 +12,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                                         const HGCalTriggerConfiguration& config,
                                         const HGCalMappingModuleIndexerTrigger& moduleIndexer,
                                         hgcaldigi::HGCalDigiTriggerHost& digisTrigger,
+					hgcaldigi::HGCalFEDTriggerPacketInfoHost& fedTriggerPacketInfo,
 					hgcaldigi::HGCalECONTPacketInfoHost& econtPacketInfo) {
   
   // Endianness assumption
@@ -311,6 +313,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	             << ", Address: " << uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0))
 	             << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0))
 	             << std::endl;
+	      fedTriggerPacketInfo.view()[fedId].FEDBX_trig() = BXSLink;
 	     //denseIdx++;
 	    } // tc loop      
 	    //denseIndexOffset += rdp.size();

@@ -71,6 +71,14 @@
   <class name="hgcaldigi::HGCalFEDPacketInfoSoA::View"/>
   <class name="edm::Wrapper<hgcaldigi::HGCalFEDPacketInfoHost>" splitLevel="0"/>
 
+  <class name="hgcaldigi::HGCalFEDTriggerPacketInfoHost" rntupleStreamerMode="true"/>
+  <!-- ::Layout alias must be listed before the aliased-to type -->
+  <class name="hgcaldigi::HGCalFEDTriggerPacketInfoHost::Layout"/>
+  <class name="hgcaldigi::HGCalFEDTriggerPacketInfoSoA"/>
+  <class name="hgcaldigi::HGCalFEDTriggerPacketInfoSoA::View"/>
+  <class name="edm::Wrapper<hgcaldigi::HGCalFEDTriggerPacketInfoHost>" splitLevel="0"/>
+
+
   <class name="hgcaldigi::HGCalDigiTriggerHost" rntupleStreamerMode="true"/>
   <!-- ::Layout alias must be listed before the aliased-to type -->
   <class name="hgcaldigi::HGCalDigiTriggerHost::Layout"/>
