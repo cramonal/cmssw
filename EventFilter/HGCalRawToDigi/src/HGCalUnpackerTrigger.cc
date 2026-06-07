@@ -277,8 +277,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      digisTrigger.view()[denseIdx].nTCs() = uint8_t(cfgecont.getNofTCs());
 	      digisTrigger.view()[denseIdx].econtHeader()(bx,0) = uint8_t(rdp.bx());
 		  digisTrigger.view()[denseIdx].expEcontHeader()(bx,0) = uint8_t(expEcontHeader);
-	      digisTrigger.view()[denseIdx].TotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
+	      digisTrigger.view()[denseIdx].encodedTotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(rdp.moduleSum()) : totE ;
+		  digisTrigger.view()[denseIdx].TotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
 	      digisTrigger.view()[denseIdx].TCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).decodedE(rdp.type()) << cfgecont.getDropLSB());
+		  digisTrigger.view()[denseIdx].encodedTCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).energy());
 	      digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address());
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData fedId : " << fedId
                  << ", iecon: " << iecon
@@ -289,12 +291,12 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	             << ", econtSwapOffset: " << econtSwapOffset
 	             << ", denseIdxOffset: " << denseIdxOffset
 	             << ", denseIdx: " << denseIdx
-	             << ", getDenseTCIndex00: " << moduleIndexer.getDenseTCIndex(fedId, econTId, 0, tcidx) 
-	             << ", getDenseTCIndex01: " << moduleIndexer.getDenseTCIndex(fedId, econTId+1, 1, tcidx) 
-	             << ", getDenseTCIndex02: " << moduleIndexer.getDenseTCIndex(fedId, econTId+2, 2, tcidx) 
-	             << ", getIndexForModuleData00: " << moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) 
-	             << ", getIndexForModuleData01: " << moduleIndexer.getIndexForModuleData(fedId, econTId+1, tcidx) 
-	             << ", getIndexForModuleData02: " << moduleIndexer.getIndexForModuleData(fedId, econTId+2, tcidx) 
+	            //  << ", getDenseTCIndex00: " << moduleIndexer.getDenseTCIndex(fedId, econTId, 0, tcidx) 
+	            //  << ", getDenseTCIndex01: " << moduleIndexer.getDenseTCIndex(fedId, econTId+1, 1, tcidx) 
+	            //  << ", getDenseTCIndex02: " << moduleIndexer.getDenseTCIndex(fedId, econTId+2, 2, tcidx) 
+	            //  << ", getIndexForModuleData00: " << moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) 
+	            //  << ", getIndexForModuleData01: " << moduleIndexer.getIndexForModuleData(fedId, econTId+1, tcidx) 
+	            //  << ", getIndexForModuleData02: " << moduleIndexer.getIndexForModuleData(fedId, econTId+2, tcidx) 
 	             << std::endl;
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData "
 	             << " algo = " << uint16_t(digisTrigger.view()[denseIdx].algo())
@@ -311,7 +313,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	             << std::endl;
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData itc : " << itc
 	             << ", Address: " << uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0))
-	             << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0))
+	             << ", Encoded Energy: " << uint32_t(digisTrigger.view()[denseIdx].encodedTCEnergy()(bx,0))
+				 << ", Unpacked Energy: " << uint32_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0))
+				 << ", Encoded MS: " << uint32_t(digisTrigger.view()[denseIdx].encodedTotE()(bx,0))
+				 << ", Unpacked MS: " << uint32_t(digisTrigger.view()[denseIdx].TotE()(bx,0))
 	             << std::endl;
 	      fedTriggerPacketInfo.view()[fedId].FEDBX_trig() = BXSLink;
 	     //denseIdx++;

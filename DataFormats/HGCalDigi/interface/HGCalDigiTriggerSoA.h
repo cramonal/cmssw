@@ -59,7 +59,9 @@ namespace hgcaldigi {
 		      SOA_EIGEN_COLUMN(Mtrxu8t71, econtHeader),        //header read fom ECONT
           SOA_EIGEN_COLUMN(Mtrxu8t71, expEcontHeader),        //header expected fom Slink trailer bx counter
 		      SOA_EIGEN_COLUMN(Mtrxu32t71, TotE),       //Module sum for BC and total enegy for STC
+          SOA_EIGEN_COLUMN(Mtrxu32t71, encodedTotE),       //Module sum for BC and total enegy for STC, encoded
 		      SOA_EIGEN_COLUMN(Mtrxu32t71, TCEnergy),   //TC energies
+          SOA_EIGEN_COLUMN(Mtrxu32t71, encodedTCEnergy),   //TC energies - encoded
 		      SOA_EIGEN_COLUMN(Mtrxu8t71, TCAddress)    //TC addresses
 		      )
 
