@@ -65,10 +65,12 @@ namespace Hgcal10gLinkReceiver {
     }
     
     const TpgSubpacketHeader* nextSubpacketHeader() const {
+      //std::cout << "This is the subpacket size::: "<< uint16_t(subpacketSize()) << std::endl;
       return this+subpacketSize()+1;
     }
-    const TpgSubpacketHeader* prevSubpacketHeader() const {
-      return this-subpacketSize()-1;
+    const TpgSubpacketHeader* prevSubpacketHeader(uint8_t prevSubpacketSize) const {
+      //std::cout << "This is the subpacket size::: "<< uint16_t(prevSubpacketSize) << std::endl;
+      return this - prevSubpacketSize -1;
     }
 
 

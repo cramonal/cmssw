@@ -61,10 +61,10 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     uint32_t isValidTdaq;
     isValidTdaq = tdaqConfig.econts.size();
 
-    // std::cout << "tdaq idx: "   << TdaqIdx 
-    //           << ", tdaqsize: " << isValidTdaq << std::endl;
-     
-    // tsh->print();	  
+    //std::cout << "tdaq idx: "   << TdaqIdx 
+    //          << ", tdaqsize: " << isValidTdaq << std::endl;
+    // 
+    //tsh->print();	  
     if (isValidTdaq != 0){
     
 
@@ -110,11 +110,11 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	uint32_t nEconTs = isValidTdaq; // in case of pairs, all econts are on the first tdaq, then the second is naturally skipped in tdaq loop!
 
 	for(unsigned bx(0);bx<tsh->numberOfBxs();bx++) {
-	  //std::cout << "Start of unpacking, BX " << bx << std::endl;
+	  //std::cout << " ----------------- Start of unpacking, BX " << bx << " ---------------------------" << std::endl;
 	  const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); 
 	  const uint32_t econTLocation = static_cast<uint32_t>(el64packed - header); // should be changed, not clear how
 	  std::unique_ptr<uint32_t[]> elinks(new uint32_t[unsigned(tsh->numberOfWordsPerBx())*2*2]); // allocate 16 in case of tpairs, supposing every packet has same number of words
-      uint8_t elink_offset = 0; // offset 0 for first tdaq in the pair, 7 for the second one
+          uint8_t elink_offset = 0; // offset 0 for first tdaq in the pair, 7 for the second one
 
 	  //filling first 7 elinks 
 	  for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
@@ -135,36 +135,36 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      				  << std::endl;	        
 	  }
 
-      if (isPair) { //only for pairs, reading toghether the next tpg subpacket (second tdaq)
-	    tsh = tsh->nextSubpacketHeader(); // going to next subpacket
-	    //std::cout << " going to next subpacket for remaining 7 elinks " << std::endl;
-	    //tsh->print();
-	    const uint64_t *el64packed2((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); //second part of elinks
-	    elink_offset = 8; 
+          if (isPair) { //only for pairs, reading toghether the next tpg subpacket (second tdaq)
+    	    uint8_t prevSubpacketSize =   tsh->subpacketSize();
+    	    tsh = tsh->nextSubpacketHeader(); // going to next subpacket
+    	    //std::cout << " going to next subpacket for remaining 7 elinks " << std::endl;
+    	    //tsh->print();
+    	    const uint64_t *el64packed2((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); //second part of elinks
+    	    elink_offset = 8; 
             // filling the remaining elinks
-  	    for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
-
-	      //ordering elinks thanks to mapping  
-	      unsigned elinkIdx = unsigned(elinks_mapping [2*j + elink_offset]);
+      	    for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
+    	      //ordering elinks thanks to mapping  
+    	      unsigned elinkIdx = unsigned(elinks_mapping [2*j + elink_offset]);
               elinks[elinkIdx] = el64packed2[j] & 0xffffffff;
               //std::cout << "Natural order - Correct order " << 2*j + elink_offset  << " - " << elinkIdx << std::endl;
-
-	      elinkIdx = unsigned(elinks_mapping [2*j + elink_offset + 1]);
-	      elinks[elinkIdx] = (el64packed2[j]>>32) & 0xffffffff;
+    
+    	      elinkIdx = unsigned(elinks_mapping [2*j + elink_offset + 1]);
+    	      elinks[elinkIdx] = (el64packed2[j]>>32) & 0xffffffff;
               //std::cout << "Natural order - Correct order " << 2*j + elink_offset + 1 << " - " << elinkIdx << std::endl;
-
-  	      sprintf(word64,"0x%016lx",el64packed2[j]);
-  	      LogDebug("[HGCalUnpackerTrigger]")  << "Word " << std::setw(6) << j << " = 0x"
-  	        				  << std::hex << std::setfill('0')
-  	        				  << std::setw(16) << word64
-  	        				  << std::dec << std::setfill(' ')
-  	        				  << std::endl;	        
-  	    }
-	    // going back to previous subpacket, so at the next bx you always start from the first tpg of the pair
-        tsh = tsh->prevSubpacketHeader();
-	    //std::cout << " going back to first subpacket" << std::endl;
-	    //tsh->print();
-	  } 
+    
+      	      sprintf(word64,"0x%016lx",el64packed2[j]);
+      	      LogDebug("[HGCalUnpackerTrigger]")  << "Word " << std::setw(6) << j << " = 0x"
+      	        				  << std::hex << std::setfill('0')
+      	        				  << std::setw(16) << word64
+      	        				  << std::dec << std::setfill(' ')
+      	        				  << std::endl;	        
+      	    }
+    	    // going back to previous subpacket, so at the next bx you always start from the first tpg of the pair
+            tsh = tsh->prevSubpacketHeader(prevSubpacketSize);
+    	    //std::cout << " going back to first subpacket" << std::endl;
+    	    //tsh->print();
+    	  } 
           for(unsigned iel(0);iel<14;iel++) { 
 	    sprintf(word32m,"0x%08x",elinks[iel]);
 	    LogDebug("[HGCalUnpackerTrigger]")  << "\t elink " << std::setw(3) << iel << " = 0x"
@@ -173,8 +173,47 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      				  << std::dec << std::setfill(' ')
 	      				  << std::endl;	      
 	  }
+	  //std::cout << "I have read RX " << std::endl;
+	  //tsh->print();
 
+	  // -----  now reading the TX
+	  //std::cout << "NOW reading the TX ... and here we are..." << std::endl;
+	  uint8_t prevSubpacketSize =   tsh->subpacketSize(); // to get back to the prev bunch at the end of this
+          tsh = tsh->nextSubpacketHeader();
+	  //tsh->print();
+	  const uint64_t *S164bitword((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); 
+	  std::unique_ptr<uint16_t[]> S1Tcs(new uint16_t[15]); // allocate 15 to handle tiles as well (6 + 9 TCs)
+          //uint16_t msStageI = 0;
+	  //uint16_t msStageI2 = 0;
 
+	  //filling StageI output (TX channels) // all very hardcoded
+          for(unsigned j(0);j<6;j++) { 
+	    //msStageI = ((S164bitword[0] & 0xffff) >> 6 ) & (0x7f) ;
+            if (j < 5) S1Tcs[j] = S164bitword[j+1] & 0xffff; //first column
+	    if (j < 4) S1Tcs[j+5] = (S164bitword[j+1]>>16) & 0xffff; //second column
+	    if (nEconTs > 1) {
+	      S1Tcs[j+9] = (S164bitword[j+1]>>32) & 0xffff;//third column (only for tiles)
+	      //msStageI2 = (S164bitword[0]>>32) & 0xffff;
+	      //msStageI2 = (msStageI2 >> 6 ) & (0x7f) ;
+	    }
+	    else S1Tcs[j+9] = 0;
+      }
+      //if (bx == 3){
+      //    std::cout << "Module SUM: " << msStageI << std::endl;
+      //    if (nEconTs > 1) std::cout << "Module SUM: " << msStageI2 << std::endl;
+      //    for(unsigned itc(0);itc<15;itc++) { 
+      //       std::cout << "\t Tcs " << std::setw(3) << itc << " = 0x"
+      //         				  << std::hex << std::setfill('0')
+      //         				  << std::setw(4) << S1Tcs[itc]
+      //         				  << std::dec << " TC: "<< ( S1Tcs[itc] & (0x3f))<< std::setfill(' ')
+      //   					  << std::dec << " En: "<< (( S1Tcs[itc] >> 6) & (0x1ff))<< std::setfill(' ')
+      //         				  << std::endl;	      
+      //     }
+      //}
+      //std::cout << "I am done... getting back to RX" << std::endl;
+
+      tsh = tsh->prevSubpacketHeader(prevSubpacketSize);
+      //tsh->print();
 	  uint32_t nprevTxs = 0 ; 
 
 
@@ -282,6 +321,22 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	      digisTrigger.view()[denseIdx].TCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).decodedE(rdp.type()) << cfgecont.getDropLSB());
 		  digisTrigger.view()[denseIdx].encodedTCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).energy());
 	      digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address());
+
+          if (bx == 3) {
+			econtPacketInfo.view()[econtDenseIdx].nTCs() = uint8_t(cfgecont.getNofTCs());
+			if (econTId!= 10) econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint8_t((( S1Tcs[itc] >> 6) & (0x1ff))) ; // getting the decoded energy
+			else econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint8_t((( S1Tcs[itc + 9] >> 6) & (0x1ff))) ; //for the special case of the second tile
+
+			//std::cout << " MS encoded " <<  digisTrigger.view()[denseIdx].encodedTotE()(bx,0) 
+		        //                 << " TC: "<< uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0)) 
+		        //                 << " encoded En: " <<  uint16_t(digisTrigger.view()[denseIdx].encodedTCEnergy()(bx,0)) 
+			//                 << " EN: " <<  uint16_t(digisTrigger.view()[denseIdx].TCEnergy()(bx,0)) 
+	                //                 << " econt dense idx " << econtDenseIdx
+			//		 << " stage I En: " <<  uint16_t(econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc))
+			//		 << std::endl;
+		  }
+
+
 	      LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData fedId : " << fedId
                  << ", iecon: " << iecon
 	             << ", econTId: " << econTId
