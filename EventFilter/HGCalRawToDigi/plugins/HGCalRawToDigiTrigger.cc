@@ -71,7 +71,7 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
     econtPacketInfo.view()[i].exception() = 0;
     econtPacketInfo.view()[i].location() = 0;
     econtPacketInfo.view()[i].payloadLength() = 0;
-    for (int32_t itc = 0; itc < 48; itc++) econtPacketInfo.view()[i].TCEnergy_Stage1()(0,itc) = 0xff;
+    for (int32_t itc = 0; itc < 48; itc++) econtPacketInfo.view()[i].TCEnergy_Stage1()(0,itc) = 0xffff;
   }
 
   for(const auto& frs :  moduleIndexer.fedReadoutSequences() ) {

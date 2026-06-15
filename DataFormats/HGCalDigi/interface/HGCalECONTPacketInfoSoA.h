@@ -12,7 +12,7 @@
 namespace hgcaldigi {
 
   // Stage-1 per-TC energy matrix per ECON-T: 1 row (BX0 only, provided by the unpacker) x 48 columns (TC0..TC47)
-  using Mtrxu8t148 = Eigen::Matrix<uint8_t, 1, 48>;
+  using Mtrxu16t148 = Eigen::Matrix<uint16_t, 1, 48>;
   namespace ECONTUnpackingFlags {
     constexpr uint8_t NormalUnpacking = 0, Stage1IOConversionError = 1, WrongSubpacketHeader = 2, tdaqIdxOutRange = 3;
   } // namespace ECONTUnpackingFlags
@@ -50,9 +50,9 @@ namespace hgcaldigi {
                       // Otherwise the payload length of the ECON-T
                       SOA_COLUMN(uint16_t, payloadLength),
                       // Stage-1 per-TC energy: 1 row (BX0) x 48 cols (TC0..TC47).
-                      // Default value is -1 (0xFF as uint8_t) until the producer fills it;
-                      // only filled cells (!= 0xFF) should be used downstream.
-                      SOA_EIGEN_COLUMN(Mtrxu8t148, TCEnergy_Stage1),
+                      // Default value is -1 (0xFFFF as uint16_t) until the producer fills it;
+                      // only filled cells (!= 0xFFFF) should be used downstream.
+                      SOA_EIGEN_COLUMN(Mtrxu16t148, TCEnergy_Stage1),
                       //number of TCs saved
                       SOA_COLUMN(uint8_t, nTCs))
 
