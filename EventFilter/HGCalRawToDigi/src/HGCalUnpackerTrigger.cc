@@ -324,8 +324,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
           if (bx == 3) {
 			econtPacketInfo.view()[econtDenseIdx].nTCs() = uint8_t(cfgecont.getNofTCs());
-			if (econTId!= 10) econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint8_t((( S1Tcs[itc] >> 6) & (0x1ff))) ; // getting the decoded energy
-			else econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint8_t((( S1Tcs[itc + 9] >> 6) & (0x1ff))) ; //for the special case of the second tile
+			if (econTId!= 10) econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint16_t((( S1Tcs[itc] >> 6) & (0x1ff))) ; // getting the decoded energy
+			else econtPacketInfo.view()[econtDenseIdx].TCEnergy_Stage1()(0,itc) = uint16_t((( S1Tcs[itc + 9] >> 6) & (0x1ff))) ; //for the special case of the second tile
 
 			//std::cout << " MS encoded " <<  digisTrigger.view()[denseIdx].encodedTotE()(bx,0) 
 		        //                 << " TC: "<< uint16_t(digisTrigger.view()[denseIdx].TCAddress()(bx,0)) 
