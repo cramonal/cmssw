@@ -18,6 +18,7 @@
 #include "DataFormats/HGCalDigi/interface/HGCalECONTPacketInfoHost.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexerTrigger.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "DataFormats/HGCalDigi/interface/HGCalFEDTriggerPacketInfoHost.h"
 
 class HGCalUnpackerTrigger {
 public:
@@ -27,6 +28,7 @@ public:
                     const HGCalTriggerConfiguration& config,
                     const HGCalMappingModuleIndexerTrigger& moduleIndexer,
                     hgcaldigi::HGCalDigiTriggerHost& digisTrigger,
+		    hgcaldigi::HGCalFEDTriggerPacketInfoHost& fedTriggerPacketInfo,
                     hgcaldigi::HGCalECONTPacketInfoHost& econtPacketInfo);
   bool parseTDAQBlock() ;
 

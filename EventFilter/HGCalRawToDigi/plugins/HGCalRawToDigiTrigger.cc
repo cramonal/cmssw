@@ -33,6 +33,7 @@ private:
   // output tokens
   const edm::EDPutTokenT<hgcaldigi::HGCalDigiTriggerHost> digisTriggerToken_;
   const edm::EDPutTokenT<hgcaldigi::HGCalECONTPacketInfoHost> econtPacketInfoToken_;
+  const edm::EDPutTokenT<hgcaldigi::HGCalFEDTriggerPacketInfoHost> fedTriggerPacketInfoToken_;
 
   // config tokens and objects
   edm::ESGetToken<HGCalMappingModuleIndexerTrigger, HGCalElectronicsMappingRcd> moduleIndexToken_;
@@ -44,6 +45,7 @@ HGCalRawToDigiTrigger::HGCalRawToDigiTrigger(const edm::ParameterSet& iConfig)
     : fedRawTriggerToken_(consumes<RawDataBuffer>(iConfig.getParameter<edm::InputTag>("src"))),
       digisTriggerToken_(produces<hgcaldigi::HGCalDigiTriggerHost>()),
       econtPacketInfoToken_(produces<hgcaldigi::HGCalECONTPacketInfoHost>()),
+      fedTriggerPacketInfoToken_(produces<hgcaldigi::HGCalFEDTriggerPacketInfoHost>()),
       moduleIndexToken_(esConsumes()),
       configToken_(esConsumes()) {}
 
@@ -56,6 +58,7 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
   const auto& config = iSetup.getData(configToken_);
   
   hgcaldigi::HGCalDigiTriggerHost digisTrigger(cms::alpakatools::host(), moduleIndexer.maxDataSize());
+  hgcaldigi::HGCalFEDTriggerPacketInfoHost fedTriggerPacketInfo(cms::alpakatools::host(), moduleIndexer.fedCount());
   hgcaldigi::HGCalECONTPacketInfoHost econtPacketInfo(cms::alpakatools::host(), moduleIndexer.maxModulesIndex());
   const auto& fedBuffer = iEvent.get(fedRawTriggerToken_);
 
@@ -68,6 +71,7 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
     econtPacketInfo.view()[i].exception() = 0;
     econtPacketInfo.view()[i].location() = 0;
     econtPacketInfo.view()[i].payloadLength() = 0;
+    for (int32_t itc = 0; itc < 48; itc++) econtPacketInfo.view()[i].TCEnergy_Stage1()(0,itc) = 0xffff;
   }
 
   for(const auto& frs :  moduleIndexer.fedReadoutSequences() ) {
@@ -85,13 +89,14 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
     std::cout << fedConfig.tdaqs.size() << " tdaq blocks and " << fedConfig.econtSwapOffset.size() << " ECONTs" << std::endl;
     
     //pedro : comment the unpacker should receive direcly fedConfig and not the full config, and maybe the fed readout sequence instead of the module indexer
-    unpacker_trigger_.parseFEDData(fedId,fed_data,config,moduleIndexer,digisTrigger,econtPacketInfo);
+    unpacker_trigger_.parseFEDData(fedId,fed_data,config,moduleIndexer,digisTrigger,fedTriggerPacketInfo,econtPacketInfo);
   }
 
 
   // put information to the event
   iEvent.emplace(digisTriggerToken_, std::move(digisTrigger));
   iEvent.emplace(econtPacketInfoToken_, std::move(econtPacketInfo));
+  iEvent.emplace(fedTriggerPacketInfoToken_, std::move(fedTriggerPacketInfo));
 }
 
 // fill descriptions

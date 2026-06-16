@@ -1035,6 +1035,26 @@ namespace TPGFEConfiguration{
     bool usesum; //true: total of all TCs, false: (total-sumofselectedTcs)
   };
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-}
+  uint16_t getExpEcontHeader(uint16_t BXSLink, TPGFEDataformat::Type type ){ 	//expected ECONT header from Slink BX counter
+    uint16_t expEcontHeader = 0;
+    uint16_t  maxMSB = 0;
+    uint16_t  modEcontHeader = 1;
 
+    if (type == TPGFEDataformat::TS){ // 5 bits ECONT header
+      maxMSB = 31;
+      modEcontHeader = 16;
+    }
+    else{ // 4 bits ECONT header
+      maxMSB = 15;
+      modEcontHeader = 8;
+          
+    }
+
+    if (BXSLink == 1) {
+      expEcontHeader = maxMSB;
+    }
+    else expEcontHeader = ((BXSLink - 1) % modEcontHeader);
+    return expEcontHeader;
+  }
+}
 #endif

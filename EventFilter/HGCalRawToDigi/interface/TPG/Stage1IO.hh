@@ -42,7 +42,12 @@ public:
     //if(v.size()==0) return;
     //if(v.size()>=4) return; // FIXME
 
+    // ECONT header
     unsigned bx(v[0]>>28);
+    if (doPrint){
+      std::cout << std::hex << " 32bit word: " << v[0]
+                << std::dec << " ECONT header: " << bx << std::endl;
+    }
     bool bitMap(false);
     if(type==TPGFEDataformat::BestC) bitMap=(nTc>7);
     
@@ -105,7 +110,9 @@ public:
 	
 	lastBit-=1;
 	if(((d>>lastBit)&0x1)!=0) {
-	  vTc.push_back(TPGFEDataformat::TcRawData(type,tc,0));
+    unsigned tcAdd = 47 - tc; // bit map: LSB is the TC 0, MSB is TC 47
+    //std::cout << "index is of bit map is " << tc << " hence tc address is " << tcAdd << std::endl;
+	  vTc.push_back(TPGFEDataformat::TcRawData(type, tcAdd , 0)); 
 	  if(doPrint) vTc.back().print();
 	}
       }
@@ -130,7 +137,8 @@ public:
       
       if(type==TPGFEDataformat::BestC) {
 	lastBit-=7;
-	vTc[tc]=TPGFEDataformat::TcRawData(type,vTc[tc].address(),(d>>lastBit)&0x7f);
+	unsigned idx = nTc - tc - 1; // assign first energy to lowest tc address
+	vTc[idx]=TPGFEDataformat::TcRawData(type,vTc[idx].address(),(d>>lastBit)&0x7f); 
       } else if(type==TPGFEDataformat::STC4A) {
 	lastBit-=7;
 	vTc[tc]=TPGFEDataformat::TcRawData(type,vTc[tc].address(),(d>>lastBit)&0x7f);
