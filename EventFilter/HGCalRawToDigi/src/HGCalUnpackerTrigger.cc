@@ -28,7 +28,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   uint16_t BXSLink = ((*(trailer - 1) >> BACKEND_FRAME::SLINK_BXID_POS) & BACKEND_FRAME::SLINK_BXID_MASK);
 
   
-  edm::LogWarning("[HGCalUnpackerTrigger]") << " nwords (64b) = " << std::distance(header, trailer) << "\n";
+  LogDebug("[HGCalUnpackerTrigger]") << " nwords (64b) = " << std::distance(header, trailer) << "\n";
 
   HGCalTriggerFedConfig fedConfig = config.feds[fedId];
   const uint64_t* ptr = header;
@@ -76,7 +76,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
         econtPacketInfo.view()[ECONTdenseIdx].location() = 0;
         econtPacketInfo.view()[ECONTdenseIdx].payloadLength() = 0;
 
-        edm::LogWarning("[HGCalTriggerUnpacker]") << "TDaq idx " << TdaqIdx << " :: Expected a header 0x" << std::hex << headerMarker
+        LogDebug("[HGCalTriggerUnpacker]") << "TDaq idx " << TdaqIdx << " :: Expected a header 0x" << std::hex << headerMarker
                                                << ", got 0x" << std::hex
                                                << tsh->pattern()
                                                << " from word = 0x" << std::hex << tsh->data() << ".";
@@ -87,7 +87,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
         
         //unsigned emp_chan(tsh->channelId()/2); // not used atm
         if (TdaqIdx >= fedConfig.tdaqs.size()) {
-          edm::LogWarning("HGCalUnpackerTrigger")
+          LogDebug("HGCalUnpackerTrigger")
               << "TDAQ index out of range for FED " << fedId << ": idx=" << TdaqIdx
               << ", size=" << fedConfig.tdaqs.size() << ". Skipping remaining subpackets.";
           done = true; // To skip everything after last expected tdaq
@@ -102,7 +102,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
         if (elinksMap.find(TdaqIdx)!= elinksMap.end()) { 
 		isPair = true; 
                 elinks_mapping = elinksMap[TdaqIdx]; 
-		edm::LogWarning("HGCalUnpackerTrigger") 
+		LogDebug("HGCalUnpackerTrigger") 
 			<< "Start unpacking of a pair ...";
 	
 	}
@@ -263,7 +263,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                 TPGStage1Emulation::Stage1IO::convertElinksToTcRawData(cfgecont.getOutType(), cfgecont.getNofTCs(), el.get(), rdp);
             }
             catch (cms::Exception &e) {
-             edm::LogWarning("Stage1IORecoverable")
+             LogDebug("Stage1IORecoverable")
              << "BX " << bx
              << " Skipping ECON-T " << iecon
              << " (neTx=" << neTx << ")\n"
