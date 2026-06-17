@@ -282,8 +282,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
 	    // check econt bx counter on central bx is aligned with slink one
         if (bx == 3 && (rdp.bx() != expEcontHeader )) {
-			edm::LogWarning("[HGCalTriggerUnpacker]") << "ECONT header BX counter " << rdp.bx()  
-			                                          << " not matching expected one from Slink " <<  expEcontHeader;
+			LogDebug("[HGCalTriggerUnpacker]") << "ECONT header BX counter " << rdp.bx()  
+			                                   << " not matching expected one from Slink " <<  expEcontHeader;
 		}
 
 
