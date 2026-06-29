@@ -15,7 +15,7 @@
 //#include "TcRawData.hh"
 #include "LpGbtData.hh"
 #include "Stage1IOFwCfg.hh"
-
+using namespace hgcal;
 namespace TPGStage1Emulation {
 
 class Stage1IO {
@@ -43,7 +43,7 @@ public:
     //if(v.size()>=4) return; // FIXME
 
     // ECONT header
-    unsigned bx(v[0]>>28);
+    unsigned bx(v[0]>>ECONT_FRAME::HEADER_POS);
     if (doPrint){
       std::cout << std::hex << " 32bit word: " << v[0]
                 << std::dec << " ECONT header: " << bx << std::endl;
@@ -77,12 +77,21 @@ public:
 	
 	if(type==TPGFEDataformat::BestC) {
 	  lastBit-=6;
+    uint8_t tcAddr = ((d>>lastBit) & ECONT_FRAME::BC_LO_TCADDR_MASK);
 	  // std::cout<< std::hex
 	  // 	   <<", d-word : 0x" << std::setfill('0') << std::setw(8) << (d>>lastBit)
-	  // 	   <<", masked-d-word : 0x" << std::setfill('0') << std::setw(8) << ((d>>lastBit)&0x3f)
+	  // 	   <<", masked-d-word : 0x" << std::setfill('0') << std::setw(8) << uint16_t(tcAddr)
 	  // 	   << std::dec << std::setfill(' ')
 	  // 	   <<std::endl;
-	  vTc.push_back(TPGFEDataformat::TcRawData(type,((d>>lastBit)&0x3f),0));
+
+    if ( tcAddr > ECONT_FRAME::BC_MAX_TCADDR) {
+      throw cms::Exception("Stage1IORecoverable")
+      << "convertElinksToTcRawData: TC address > " <<  ECONT_FRAME::BC_MAX_TCADDR << "\n"
+      << "  tcAddr        = " <<  uint16_t(tcAddr) << "\n"
+      << "  type       = " << type;
+      ;
+    } 
+	  vTc.push_back(TPGFEDataformat::TcRawData(type, tcAddr,0));
 	}
 	if(type==TPGFEDataformat::STC4A) {
 	  lastBit-=2;
@@ -99,7 +108,7 @@ public:
       }
 
     } else {
-      for(unsigned tc(0);tc<48;tc++) {
+      for(unsigned tc(0);tc<ECONT_FRAME::BC_MAX_TCADDR + 1;tc++) {
 	if(lastBit<1) {
 	  d=(d<<32);
 	  lastWord++;
@@ -110,7 +119,7 @@ public:
 	
 	lastBit-=1;
 	if(((d>>lastBit)&0x1)!=0) {
-    unsigned tcAdd = 47 - tc; // bit map: LSB is the TC 0, MSB is TC 47
+    unsigned tcAdd = ECONT_FRAME::BC_MAX_TCADDR - tc; // bit map: LSB is the TC 0, MSB is TC 47
     //std::cout << "index is of bit map is " << tc << " hence tc address is " << tcAdd << std::endl;
 	  vTc.push_back(TPGFEDataformat::TcRawData(type, tcAdd , 0)); 
 	  if(doPrint) vTc.back().print();

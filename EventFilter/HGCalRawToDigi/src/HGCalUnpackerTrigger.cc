@@ -4,6 +4,7 @@
 #include "EventFilter/HGCalRawToDigi/interface/TPG/Stage1IO.hh"
 #include "EventFilter/HGCalRawToDigi/interface/TPG/TpgSubpacketHeader.h"
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
+#include "DataFormats/HGCalDigi/interface/HGCalTriggerDefinitions.h"
 #include "DataFormats/HGCalDigi/interface/HGCalFEDTriggerPacketInfoHost.h"
 using namespace hgcal;
 
@@ -35,8 +36,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     char num[10], word64[20], word32m[20], word32l[20];
     for (unsigned iword = 0; ptr < trailer; ++iword) {
         uint64_t tword = *ptr;
-        uint32_t tword32m = ((tword>>32) & 0xffffffff);
-        uint32_t tword32l = tword & 0xffffffff;
+        uint32_t tword32m = ((tword>>TDAQ_FRAME::TDAQ_HEADER_POS) & TDAQ_FRAME::TDAQ_HEADER_MASK);
+        uint32_t tword32l = tword & TDAQ_FRAME::TDAQ_HEADER_MASK;
         sprintf(num,"%03u",iword);
         sprintf(word64,"0x%016lx",tword);
         sprintf(word32m,"0x%08x",tword32m);
@@ -96,6 +97,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                 // elinks map
                 // ordering of elinks is trivial, with the 8 and 16 in the last position of the array, as default
                 std::vector<uint8_t> elinks_mapping = {0,1,2,3,4,5,6,14,7,8,9,10,11,12,13,15};  
+
                 auto elinksMap = fedConfig.elinksMap;
                 // if itdaq is in the keys of elinks map, overwrite the dummy elink map
                 if (elinksMap.find(TdaqIdx)!= elinksMap.end()) { 
@@ -111,16 +113,15 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                     const uint64_t *el64packed((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); 
                     const uint32_t econTLocation = static_cast<uint32_t>(el64packed - header); // should be changed, not clear how
                     std::unique_ptr<uint32_t[]> elinks(new uint32_t[unsigned(tsh->numberOfWordsPerBx())*2*2]); // allocate 16 in case of tpairs, supposing every packet has same number of words
-                    uint8_t elink_offset = 0; // offset 0 for first tdaq in the pair, 7 for the second one
 
                     //filling first 7 elinks 
                     for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
                         //ordering elinks thanks to mapping  
-                        unsigned elinkIdx = unsigned(elinks_mapping [2*j + elink_offset]);
-                        elinks[elinkIdx] = el64packed[j] & 0xffffffff;
+                        unsigned elinkIdx = unsigned(elinks_mapping [2*j ]);
+                        elinks[elinkIdx] = el64packed[j] & TDAQ_FRAME::TDAQ_ELINK_MASK;
                         //std::cout << "Natural order - Correct order " << 2*j + elink_offset  << " - " << elinkIdx << std::endl;
-                        elinkIdx = unsigned(elinks_mapping [2*j + elink_offset +1]);
-                        elinks[elinkIdx] = (el64packed[j]>>32) & 0xffffffff;
+                        elinkIdx = unsigned(elinks_mapping [2*j  +1]);
+                        elinks[elinkIdx] = (el64packed[j]>>TDAQ_FRAME::TDAQ_ELINK_POS) & TDAQ_FRAME::TDAQ_ELINK_MASK;
                         //std::cout << "Natural order - Correct order " << 2*j + elink_offset + 1 << " - " << elinkIdx  << std::endl;
                         sprintf(word64,"0x%016lx",el64packed[j]);
                         LogDebug("[HGCalUnpackerTrigger]")  << "Word " << std::setw(6) << j << " = 0x"
@@ -143,16 +144,16 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                         //std::cout << " going to next subpacket for remaining 7 elinks " << std::endl;
                         //tsh->print();
                         const uint64_t *el64packed2((const uint64_t*)(tsh+1+bx*tsh->numberOfWordsPerBx())); //second part of elinks
-                        elink_offset = 8; 
+
                         // filling the remaining elinks
                         for(unsigned j(0);j<tsh->numberOfWordsPerBx();j++) { 
                         //ordering elinks thanks to mapping  
-                        unsigned elinkIdx = unsigned(elinks_mapping [2*j + elink_offset]);
-                        elinks[elinkIdx] = el64packed2[j] & 0xffffffff;
+                        unsigned elinkIdx = unsigned(elinks_mapping [2*j + TDAQ_FRAME::TDAQ_ELINK_OFFSET]);
+                        elinks[elinkIdx] = el64packed2[j] & TDAQ_FRAME::TDAQ_ELINK_MASK;
                         //std::cout << "Natural order - Correct order " << 2*j + elink_offset  << " - " << elinkIdx << std::endl;
                 
-                        elinkIdx = unsigned(elinks_mapping [2*j + elink_offset + 1]);
-                        elinks[elinkIdx] = (el64packed2[j]>>32) & 0xffffffff;
+                        elinkIdx = unsigned(elinks_mapping [2*j + TDAQ_FRAME::TDAQ_ELINK_OFFSET + 1]);
+                        elinks[elinkIdx] = (el64packed2[j]>>TDAQ_FRAME::TDAQ_ELINK_POS) & TDAQ_FRAME::TDAQ_ELINK_MASK;
                         //std::cout << "Natural order - Correct order " << 2*j + elink_offset + 1 << " - " << elinkIdx << std::endl;
                 
                         sprintf(word64,"0x%016lx",el64packed2[j]);
@@ -212,7 +213,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                     }
 
                     uint32_t nprevTxs = 0 ; 
-                    for(unsigned iel(0);iel<14;iel++) { 
+                    for(uint32_t iel(0);iel<TDAQ_FRAME::TDAQ_PAIRS_NELINKS;iel++) { 
                         sprintf(word32m,"0x%08x",elinks[iel]);
                         LogDebug("[HGCalUnpackerTrigger]")  << "\t elink " << std::setw(3) << iel << " = 0x"
                                 << std::hex << std::setfill('0')

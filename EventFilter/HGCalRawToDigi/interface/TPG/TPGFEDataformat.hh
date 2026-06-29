@@ -275,7 +275,7 @@ namespace TPGFEDataformat{
     void setTriggerCell(TPGFEDataformat::Type t, uint8_t a, uint16_t e) {
       switch(t){
       case TPGFEDataformat::BestC:
-	assert(a<=47);
+	//assert(a<=47); // moved as exc before filling in STAGEIO
 	assert(e<=0x7f);
 	break;
       case TPGFEDataformat::STC4A:
