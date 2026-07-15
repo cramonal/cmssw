@@ -132,7 +132,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                     cell_row.i2());
                   HGCScintillatorDetId sciDetId(row.detid());
                   row.layer() = sciDetId.layer() + layerOffset;
-                  row.area() = hgcal_geom->getArea( row.detid() );
+                  row.area() = 0; //hgcal_geom->getArea( row.detid() );
                 } else {
                   row.detid() = module_row.detid() + cell_row.detid();
                   HGCSiliconDetId siDetId(row.detid());
