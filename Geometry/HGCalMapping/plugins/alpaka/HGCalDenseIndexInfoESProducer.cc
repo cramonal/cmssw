@@ -130,10 +130,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                     module_row.celltype(),
                                                                     cell_row.i1(),
                                                                     cell_row.i2());
-                  row.layer() = HGCScintillatorDetId(row.detid()).layer() + layerOffset;
+                  HGCScintillatorDetId sciDetId(row.detid());
+                  row.layer() = sciDetId.layer() + layerOffset;
+                  row.area() = hgcal_geom->getArea( row.detid() );
                 } else {
                   row.detid() = module_row.detid() + cell_row.detid();
-                  row.layer() = HGCSiliconDetId(row.detid()).layer() + layerOffset;
+                  HGCSiliconDetId siDetId(row.detid());
+                  row.layer() = siDetId.layer() + layerOffset;
+                  row.area() = hgcal_geom->getArea( siDetId );
                 }
 
                 //assign position from geometry
