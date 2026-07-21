@@ -146,8 +146,9 @@ public:
       
       if(type==TPGFEDataformat::BestC) {
 	lastBit-=7;
-	unsigned idx = nTc - tc - 1; // assign first energy to lowest tc address
-	vTc[idx]=TPGFEDataformat::TcRawData(type,vTc[idx].address(),(d>>lastBit)&0x7f); 
+	unsigned idx = nTc - tc - 1; // to assign first energy to lowest tc address for high occupancy
+	if (bitMap) vTc[idx]=TPGFEDataformat::TcRawData(type,vTc[idx].address(),(d>>lastBit)&0x7f); 
+	else vTc[tc]=TPGFEDataformat::TcRawData(type,vTc[tc].address(),(d>>lastBit)&0x7f);
       } else if(type==TPGFEDataformat::STC4A) {
 	lastBit-=7;
 	vTc[tc]=TPGFEDataformat::TcRawData(type,vTc[tc].address(),(d>>lastBit)&0x7f);
