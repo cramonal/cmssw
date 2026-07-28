@@ -298,18 +298,18 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                         //// How much of below will be **CONFIGURE** ed
                         for(unsigned itc(0) ; itc < rdp.size() ; itc++){
 
-                            //uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
-                            uint32_t tcidx = itc;
+                            uint32_t tcidx = uint32_t(rdp.getTc(itc).address()); 
+                            //uint32_t tcidx = itc;
                             //uint32_t denseIdx = tcidx + fedReadoutSequence.TCOffsets_.at(econTId) ; //same as following function call
                             uint32_t denseIdxRaw = moduleIndexer.getIndexForModuleData(fedId, econTId, tcidx) ; // before any swapping
                             
                             // offset in 2 steps, first mux then econts 
-                            uint32_t tcMuxSwapOffset = econt_conf.tcMux[itc] - tcidx;
-                            uint32_t econtSwapOffset = fedConfig.econtSwapOffset[iecon];
-                            uint32_t denseIdxOffset =  tcMuxSwapOffset + econtSwapOffset; 
+                            int32_t tcMuxSwapOffset = econt_conf.tcMux[tcidx] - tcidx;
+                            int32_t econtSwapOffset = fedConfig.econtSwapOffset[iecon];
+                            int32_t denseIdxOffset =  tcMuxSwapOffset + econtSwapOffset; 
 
                             // get offset directly from config file
-                            //uint32_t denseIdxOffset =  econt_conf.offset[itc]; 
+                            //int32_t denseIdxOffset =  econt_conf.offset[tcidx]; 
 
                             uint32_t denseIdx = denseIdxRaw + denseIdxOffset; // applying offset accounting for TCs and econts swapping
 
@@ -325,7 +325,7 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
                             digisTrigger.view()[denseIdx].TotE()(bx,0) = (rdp.type()==TPGFEDataformat::BestC)? uint32_t(TPGFEDataformat::TcRawData::Decode5E3M(rdp.moduleSum())) : totE ;
                             digisTrigger.view()[denseIdx].TCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).decodedE(rdp.type()) << cfgecont.getDropLSB());
                             digisTrigger.view()[denseIdx].encodedTCEnergy()(bx,0) = uint32_t(rdp.getTc(itc).energy());
-                            digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address());
+                            digisTrigger.view()[denseIdx].TCAddress()(bx,0) = uint8_t(rdp.getTc(itc).address() + tcMuxSwapOffset );
 
                             //if (bx == 3 && (tsh->nextSubpacketHeader())->channelId()%2!=0 ) {
                             if (bx == 3 ) {
