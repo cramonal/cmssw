@@ -64,7 +64,7 @@ def get_iphi_number(base_iphi : int, sector : int, isHD : bool) -> int:
   - iphi (int): The global iphi index.
   """
   niPhis = 8 if not isHD else 12
-  iphi = base_iphi + (8 * (sector - 1))
+  iphi = base_iphi + (niPhis * (sector - 1))
   return iphi
 
 def get_ring_max_and_n_rings(mod_n_rings : int, mod_ring_max : int, localROC : int, localHalfROC : int, hd_tiles : bool) -> tuple[int, int]:
@@ -485,7 +485,7 @@ layer_ordering = {
   34 : (("TM-K6",1), ("TM-J12", 1), ("TM-J12",3), ("TM-J12",2), ("TM-J12",4), ("TM-K6",2)),
   35 : (("TM-K8",1), ("TM-K8",3), ("TM-J12", 1), ("TM-J12",3), ("TM-J12",2), ("TM-J12",4), ("TM-K8",2)),
   36 : (("TM-K11",1), ("TM-K11",3), ("TM-J12", 1), ("TM-J12",3), ("TM-J12",2), ("TM-J12",4), ("TM-K11",2), ("TM-K11",4)),
-  37 : (("TM-K12",1), ("TM-K12",3), ("TM-J12", 1), ("TM-J12",3), ("TM-J12",2), ("TM-J12",4), ("TM-K12",2), ("TM-K12",4)),
+  37 : (("TM-J12",4), ("TM-J12",2), ("TM-K12", 4), ("TM-K12",1), ("TM-K12",2), ("TM-K12",3), ("TM-J12",1), ("TM-J12",3)),
   38 : (("TM-D8", 1), ("TM-E8",1), ("TM-C5",1), ("TM-G3",1), ("TM-G3",2), ("TM-C5",2), ("TM-D8",2), ("TM-E8",2)),
   39 : (("TM-D8", 1), ("TM-E8",1), ("TM-C5",1), ("TM-G5",1), ("TM-G5",2), ("TM-C5",2), ("TM-D8",2), ("TM-E8",2)),
   40 : (("TM-D8",1), ("TM-E8",1), ("TM-B11B12",1), ("TM-B11B12",3), ("TM-G7",1), ("TM-G7",2), ("TM-B11B12",2), ("TM-D8",2), ("TM-E8",2)),
@@ -513,7 +513,7 @@ if __name__ == '__main__':
 
 
     for layer, modules in layer_ordering.items():
-      
+    
       for sector in (1, 2, 3):
         # global ROC and HalfROC counters
         globalROC = 0
