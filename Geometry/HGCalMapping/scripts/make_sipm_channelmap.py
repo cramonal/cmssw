@@ -527,16 +527,23 @@ if __name__ == '__main__':
           mod_n_rings = module_types[modtype][0]
           n_phis = module_types[modtype][1]
           mod_ring_max = module_types[modtype][2]
-
+          
           hd_tiles = n_phis == 12
           # Get max ring number and number of rings for the module
           ring_max, n_rings = get_ring_max_and_n_rings(mod_n_rings, mod_ring_max, localROC, localHalfROC, hd_tiles)
-
           ring_min = 0
-          if (halfROC_ == 2):
-            ring_min += 4
-          if (halfROC_ == 3):
-            ring_min += 8
+          if not hd_tiles:
+             if (halfROC_ == 2):
+                ring_min += 4
+             if (halfROC_ == 3):
+                ring_min += 8
+          else:
+             if (halfROC_ == 2):
+                ring_min += 3
+             if (halfROC_ == 3):
+                ring_min += 6
+             if (halfROC_ == 4):
+                ring_min += 9
           # Get channel map
           if not hd_tiles:
             channel_number_to_channel_location = channel_number_to_channel_location_8phi
